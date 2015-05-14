@@ -2,6 +2,7 @@ package splay
 
 import (
 	"errors"
+	// "fmt"
 )
 
 const keyMaxLength int = 255
@@ -20,45 +21,91 @@ type Tree struct {
 	root *node
 }
 
-// Init initializes the Tree structure by setting the root node to nil
-func (t *Tree) Init() {
+// New initializes the Tree structure by setting the root node to nil
+func New() *Tree {
+	t := new(Tree)
 	t.root = nil
+	return t
 }
 
 // Insert a key-value couple into the tree
 func (t *Tree) Insert(key string, value Any) error {
-	var err error
-	// if key is > key_max_length => error
-	if len(key) > keyMaxLength {
-		return errors.New("Key exceeding max length of 255 chars.")
+	if !keyIsValid(key) {
+		return errors.New("Invalid key.")
 	}
-	if t.root == nil {
-		t.root = &node{parent: nil, left: nil, right: nil, key: key, value: value}
-		return err
+	// if t.root == nil {
+	// 	t.setRoot(key, value)
+	// 	return nil
+	// }
+	if t.Get(key) != nil {
+		return errors.New("Key already exists.")
 	}
-	current := t.root
-	var parent *node
-	var direction string
-	for current != nil {
-		if key == current.key {
-			err = errors.New("Key already existing.")
-			return err
-		}
-		parent = current
-		if key < current.key {
-			current = current.left
-			direction = "left"
-		} else {
-			current = current.right
-			direction = "right"
-		}
-	}
-	current = &node{parent: parent, left: nil, right: nil, key: key, value: value}
-	if direction == "left" {
-		parent.left = current
-	} else {
-		parent.right = current
-	}
+	insertNode(key, value, t.root, nil, t)
+
 	//splay
-	return err
+	return nil
+}
+
+// Get retrieves a value by key. Nil if the key doesn't exist
+func (t *Tree) Get(key string) Any {
+	return getNode(key, t.root)
+}
+
+/*** Support functions ***/
+func insertNode(key string, value Any, current, parent *node, t *Tree) *node {
+	if current == nil {
+		current = &node{parent: parent, left: nil, right: nil, key: key, value: value}
+		t.root = current
+		return current
+	}
+	switch compare(key, current.key) {
+	case -1:
+		if current.left == nil {
+			current.left = &node{parent: current, left: nil, right: nil, key: key, value: value}
+			return current.left
+		}
+		return insertNode(key, value, current.left, current, t)
+	case 1:
+		if current.right == nil {
+			current.right = &node{parent: current, left: nil, right: nil, key: key, value: value}
+			return current.right
+		}
+		return insertNode(key, value, current.right, current, t)
+	}
+	return nil
+}
+
+func getNode(key string, node *node) Any {
+	if node == nil {
+		return nil
+	}
+	if key < node.key {
+		return getNode(key, node.left)
+	} else if key > node.key {
+		return getNode(key, node.right)
+	} else { // hit!
+		// splay
+		return node.value
+	}
+}
+
+func keyIsValid(key string) bool {
+	if len(key) > keyMaxLength {
+		return false
+	}
+	return true
+}
+
+func (t *Tree) setRoot(key string, value Any) {
+	t.root = &node{parent: nil, left: nil, right: nil, key: key, value: value}
+}
+
+func compare(a, b string) int {
+	if a < b {
+		return -1
+	}
+	if a == b {
+		return 0
+	}
+	return 1
 }
