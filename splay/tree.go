@@ -2,7 +2,8 @@ package splay
 
 import (
 	"errors"
-	// "fmt"
+	"fmt"
+	"strings"
 )
 
 const keyMaxLength int = 255
@@ -40,9 +41,9 @@ func (t *Tree) Insert(key string, value Any) error {
 	if t.Get(key) != nil {
 		return errors.New("Key already exists.")
 	}
-	insertNode(key, value, t.root, nil, t)
+	node := insertNode(key, value, t.root, nil, t)
 
-	//splay
+	splay(t, node)
 	return nil
 }
 
@@ -108,4 +109,94 @@ func compare(a, b string) int {
 		return 0
 	}
 	return 1
+}
+
+func (t *Tree) print() {
+	if t == nil || t.root == nil {
+		fmt.Println("Empty tree")
+		return
+	}
+	printNode(t.root, 0)
+}
+
+func printNode(n *node, depth int) {
+	if n == nil {
+		return
+	}
+	fmt.Printf("%s[%s]\n", strings.Repeat("-", 2*depth), n.key)
+	printNode(n.left, depth+1)
+	printNode(n.right, depth+1)
+}
+
+///////////////////////////////////////////////
+/// Code block taken from Wikipedia         ///
+/// http://en.wikipedia.org/wiki/Splay_tree ///
+///////////////////////////////////////////////
+func leftRotate(t *Tree, x *node) {
+	y := x.right
+	if y != nil {
+		x.right = y.left
+		if y.left != nil {
+			y.left.parent = x
+		}
+		y.parent = x.parent
+	}
+
+	if x.parent == nil {
+		t.root = y
+	} else if x == x.parent.left {
+		x.parent.left = y
+	} else {
+		x.parent.right = y
+	}
+	if y != nil {
+		y.left = x
+	}
+	x.parent = y
+}
+
+func rightRotate(t *Tree, x *node) {
+	y := x.left
+	if y != nil {
+		x.left = y.right
+		if y.right != nil {
+			y.right.parent = x
+		}
+		y.parent = x.parent
+	}
+	if x.parent == nil {
+		t.root = y
+	} else if x == x.parent.left {
+		x.parent.left = y
+	} else {
+		x.parent.right = y
+	}
+	if y != nil {
+		y.right = x
+	}
+	x.parent = y
+}
+
+func splay(t *Tree, x *node) {
+	if x.parent != nil {
+		if x.parent.parent == nil {
+			if x.parent.left == x {
+				rightRotate(t, x.parent)
+			} else {
+				leftRotate(t, x.parent)
+			}
+		} else if x.parent.left == x && x.parent.parent.left == x.parent {
+			rightRotate(t, x.parent.parent)
+			rightRotate(t, x.parent)
+		} else if x.parent.right == x && x.parent.parent.right == x.parent {
+			leftRotate(t, x.parent.parent)
+			leftRotate(t, x.parent)
+		} else if x.parent.left == x && x.parent.parent.right == x.parent {
+			rightRotate(t, x.parent)
+			leftRotate(t, x.parent)
+		} else {
+			leftRotate(t, x.parent)
+			rightRotate(t, x.parent)
+		}
+	}
 }
