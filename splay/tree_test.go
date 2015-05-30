@@ -1,16 +1,20 @@
 package splay
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
+	"time"
 )
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+var r = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func randSeq(n int) string {
 	b := make([]rune, n)
 	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+		ran := r.Intn(len(letters))
+		b[i] = letters[ran]
 	}
 	return string(b)
 }
@@ -31,6 +35,7 @@ func createDefaultTreeWithRoot() *Tree {
 }
 
 func createPopulatedTree() *Tree {
+
 	fakeTree := New()
 	fakeTree.Insert(randSeq(5), "{'test': 'value_Abc'}")
 	fakeTree.Insert(randSeq(5), "{'test': 'value1'}")
@@ -63,53 +68,14 @@ func TestInsertRootCorrectly(t *testing.T) {
 
 func TestInsertNodeOnLeftOfRoot(t *testing.T) {
 	fakeTree := createDefaultTreeWithRoot()
-	fakeTree.print()
-	fakeKey := "left"
-	fakeValue := "{'test': 'value2'}"
+	fakeKey := "testLeft"
+	fakeValue := "{'testLeft': 'value2'}"
 	fakeTree.Insert(fakeKey, fakeValue)
-	if fakeTree.root.value != "value2" {
-		//t.Fatalf("Expecting new inserted node to be root, it is not.")
+	if fakeTree.root.key != "testLeft" {
+		t.Fatalf("Expecting new inserted node to be root, it is not.")
 	}
-	fakeTree.print()
-	// if fakeTree.root.right != nil {
-	// 	t.Fatalf("Expecting root.right to be nil, it is not.")
-	// }
-	// node := fakeTree.root.left
-	// if node == nil {
-	// 	t.Fatalf("Left node not added")
-	// 	return
-	// }
-	// if node.key != fakeKey {
-	// 	t.Fatalf("Expecting key: %s, found %s", fakeKey, node.key)
-	// }
-	// if node.value == nil {
-	// 	t.Fatalf("Expecting value %s, found nil", fakeValue)
-	// }
-	// if node.value != fakeValue {
-	// 	t.Fatalf("Expecting value: %s, found %s", fakeValue, node.value)
-	// }
-}
-
-func TestInsertNodeOnRightOfRoot(t *testing.T) {
-	fakeTree := createDefaultTreeWithRoot()
-	fakeKey := "right"
-	fakeValue := "{'test': 'value2'}"
-	fakeTree.Insert(fakeKey, fakeValue)
-	if fakeTree.root.left != nil {
-		t.Fatalf("Expecting root.left to be nil, it is not.")
-	}
-	node := fakeTree.root.right
-	if node == nil {
-		t.Fatalf("Right node not added")
-	}
-	if node.key != fakeKey {
-		t.Fatalf("Expecting key: %s, found %s", fakeKey, node.key)
-	}
-	if node.value == nil {
-		t.Fatalf("Expecting value %s, found nil", fakeValue)
-	}
-	if node.value != fakeValue {
-		t.Fatalf("Expecting value: %s, found %s", fakeValue, node.value)
+	if fakeTree.root.left.key != "myRoot" {
+		t.Fatal("Expected former root node to be new root's left node, but it wasn't.")
 	}
 }
 
@@ -134,12 +100,51 @@ func TestCanInsertNodeAndCanGetItsValue(t *testing.T) {
 			break
 		}
 	}
-	err := fakeTree.Insert(key, "{'test': 'abcdas'}")
-	if err != nil {
-		t.Fatal("It should have been able to insert node. Error: %s", err.Error())
-	}
+	fakeTree.Insert(key, "{'test': 'abcdas'}")
+	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
+	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
+	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
+	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
 	if fakeTree.Get(key) == nil {
 		t.Fatalf("It should have been able to find key %s", key)
 	}
-	fakeTree.print()
+}
+
+func TestGetNonExistentNodeReturnsNil(t *testing.T) {
+	fakeTree := createEmptyTree()
+	fakeTree.Insert("a", "b")
+	fakeTree.Insert("S", "c")
+	fakeTree.Insert("f", "e")
+	value := fakeTree.Get("T")
+	if value != nil {
+		t.Fatal("Getting a non existent key should have returned nil")
+	}
+}
+
+func TestGetSameKeyShouldEventuallyMoveNodeToRoot(t *testing.T) {
+	fakeTree := createPopulatedTree()
+	var key string
+	for {
+		key = randSeq(5)
+		if fakeTree.Get(key) == nil {
+			break
+		}
+	}
+	fmt.Printf("Key: %s\n", key)
+	fakeTree.Insert(key, "{'test': 'abcdas'}")
+	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
+	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
+	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
+	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
+	maxIterations := 10
+	iterations := 0
+	for fakeTree.root.key != key {
+		if fakeTree.Get(key) == nil {
+			t.Fatalf("It should have been able to find key %s", key)
+		}
+		iterations++
+		if iterations == maxIterations {
+			t.Fatal("It should have already moved the node to the root")
+		}
+	}
 }

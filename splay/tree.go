@@ -34,10 +34,6 @@ func (t *Tree) Insert(key string, value Any) error {
 	if !keyIsValid(key) {
 		return errors.New("Invalid key.")
 	}
-	// if t.root == nil {
-	// 	t.setRoot(key, value)
-	// 	return nil
-	// }
 	if t.Get(key) != nil {
 		return errors.New("Key already exists.")
 	}
@@ -49,7 +45,12 @@ func (t *Tree) Insert(key string, value Any) error {
 
 // Get retrieves a value by key. Nil if the key doesn't exist
 func (t *Tree) Get(key string) Any {
-	return getNode(key, t.root)
+	node := getNode(key, t.root)
+	if node == nil {
+		return nil
+	}
+	splay(t, node)
+	return node.value
 }
 
 /*** Support functions ***/
@@ -76,7 +77,7 @@ func insertNode(key string, value Any, current, parent *node, t *Tree) *node {
 	return nil
 }
 
-func getNode(key string, node *node) Any {
+func getNode(key string, node *node) *node {
 	if node == nil {
 		return nil
 	}
@@ -85,8 +86,7 @@ func getNode(key string, node *node) Any {
 	} else if key > node.key {
 		return getNode(key, node.right)
 	} else { // hit!
-		// splay
-		return node.value
+		return node
 	}
 }
 
@@ -123,7 +123,15 @@ func printNode(n *node, depth int) {
 	if n == nil {
 		return
 	}
-	fmt.Printf("%s[%s]\n", strings.Repeat("-", 2*depth), n.key)
+	side := ""
+	if n.parent != nil {
+		if n.parent.right == n {
+			side = "(R)"
+		} else {
+			side = "(L)"
+		}
+	}
+	fmt.Printf("%s%s[%s]\n", strings.Repeat("-", 2*depth), side, n.key)
 	printNode(n.left, depth+1)
 	printNode(n.right, depth+1)
 }
@@ -178,6 +186,9 @@ func rightRotate(t *Tree, x *node) {
 }
 
 func splay(t *Tree, x *node) {
+	if x == nil {
+		return
+	}
 	if x.parent != nil {
 		if x.parent.parent == nil {
 			if x.parent.left == x {
