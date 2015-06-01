@@ -148,3 +148,17 @@ func TestGetSameKeyShouldEventuallyMoveNodeToRoot(t *testing.T) {
 		}
 	}
 }
+
+func TestCannotModifyTreeIfRootIsLocked(t *testing.T) {
+	fakeTree := createDefaultTreeWithRoot()
+	fakeTree.root.lock.Lock()
+	fmt.Println("Acquired lock")
+	go func() {
+		fmt.Println("From goroutine, trying to acquire lock")
+		fakeTree.root.lock.Lock()
+		fmt.Println("From goroutine, acquired lock")
+	}()
+	time.Sleep(time.Second)
+	fakeTree.root.lock.Unlock()
+	fmt.Println("Released lock")
+}

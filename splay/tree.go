@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 )
 
 const keyMaxLength int = 255
@@ -15,6 +16,7 @@ type node struct {
 	parent, left, right *node
 	key                 string
 	value               Any
+	lock                *sync.Mutex
 }
 
 // Tree is the basic type for the splay package
@@ -54,22 +56,26 @@ func (t *Tree) Get(key string) Any {
 }
 
 /*** Support functions ***/
+func newNode(key string, value Any, parent *node) *node {
+	return &node{parent: parent, left: nil, right: nil, key: key, value: value, lock: &sync.Mutex{}}
+}
+
 func insertNode(key string, value Any, current, parent *node, t *Tree) *node {
 	if current == nil {
-		current = &node{parent: parent, left: nil, right: nil, key: key, value: value}
+		current = newNode(key, value, parent)
 		t.root = current
 		return current
 	}
 	switch compare(key, current.key) {
 	case -1:
 		if current.left == nil {
-			current.left = &node{parent: current, left: nil, right: nil, key: key, value: value}
+			current.left = newNode(key, value, current)
 			return current.left
 		}
 		return insertNode(key, value, current.left, current, t)
 	case 1:
 		if current.right == nil {
-			current.right = &node{parent: current, left: nil, right: nil, key: key, value: value}
+			current.right = newNode(key, value, current)
 			return current.right
 		}
 		return insertNode(key, value, current.right, current, t)
@@ -98,7 +104,7 @@ func keyIsValid(key string) bool {
 }
 
 func (t *Tree) setRoot(key string, value Any) {
-	t.root = &node{parent: nil, left: nil, right: nil, key: key, value: value}
+	t.root = newNode(key, value, nil)
 }
 
 func compare(a, b string) int {
