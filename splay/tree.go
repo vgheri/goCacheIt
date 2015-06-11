@@ -12,8 +12,9 @@ const keyMaxLength int = 255
 // Any defines a generic type accepted by the Tree as a value
 type Any interface{}
 
-type node struct {
-	parent, left, right *node
+// Node is the type for tree elements
+type Node struct {
+	parent, left, right *Node
 	key                 string
 	value               Any
 	lock                *sync.Mutex
@@ -21,7 +22,7 @@ type node struct {
 
 // Tree is the basic type for the splay package
 type Tree struct {
-	root *node
+	root *Node
 }
 
 // New initializes the Tree structure by setting the root node to nil
@@ -45,22 +46,49 @@ func (t *Tree) Insert(key string, value Any) error {
 	return nil
 }
 
-// Get retrieves a value by key. Nil if the key doesn't exist
-func (t *Tree) Get(key string) Any {
+// Get retrieves a node by key. Nil if the key doesn't exist
+func (t *Tree) Get(key string) *Node {
 	node := getNode(key, t.root)
 	if node == nil {
 		return nil
 	}
 	splay(t, node)
-	return node.value
+	return node
+}
+
+// Remove deletes the node with the desired key from the tree.
+// Error if the key does not exist
+func (t *Tree) Remove(key string) error {
+	node := t.Get(key)
+	if node == nil {
+		return errors.New("Key does not exist.")
+	}
+	splay(t, node)
+
+	if node.left == nil {
+		replace(t, node, node.right)
+	} else if node.right == nil {
+		replace(t, node, node.left)
+	} else {
+		minimum := subtreeMinimum(node.right)
+		if minimum.parent != node {
+			replace(t, minimum, minimum.right)
+			minimum.right = node.right
+			minimum.right.parent = minimum
+		}
+		replace(t, node, minimum)
+		minimum.left = node.left
+		minimum.left.parent = minimum
+	}
+	return nil
 }
 
 /*** Support functions ***/
-func newNode(key string, value Any, parent *node) *node {
-	return &node{parent: parent, left: nil, right: nil, key: key, value: value, lock: &sync.Mutex{}}
+func newNode(key string, value Any, parent *Node) *Node {
+	return &Node{parent: parent, left: nil, right: nil, key: key, value: value, lock: &sync.Mutex{}}
 }
 
-func insertNode(key string, value Any, current, parent *node, t *Tree) *node {
+func insertNode(key string, value Any, current, parent *Node, t *Tree) *Node {
 	if current == nil {
 		current = newNode(key, value, parent)
 		t.root = current
@@ -83,7 +111,7 @@ func insertNode(key string, value Any, current, parent *node, t *Tree) *node {
 	return nil
 }
 
-func getNode(key string, node *node) *node {
+func getNode(key string, node *Node) *Node {
 	if node == nil {
 		return nil
 	}
@@ -125,7 +153,7 @@ func (t *Tree) print() {
 	printNode(t.root, 0)
 }
 
-func printNode(n *node, depth int) {
+func printNode(n *Node, depth int) {
 	if n == nil {
 		return
 	}
@@ -146,7 +174,7 @@ func printNode(n *node, depth int) {
 /// Code block taken from Wikipedia         ///
 /// http://en.wikipedia.org/wiki/Splay_tree ///
 ///////////////////////////////////////////////
-func leftRotate(t *Tree, x *node) {
+func leftRotate(t *Tree, x *Node) {
 	y := x.right
 	if y != nil {
 		x.right = y.left
@@ -169,7 +197,7 @@ func leftRotate(t *Tree, x *node) {
 	x.parent = y
 }
 
-func rightRotate(t *Tree, x *node) {
+func rightRotate(t *Tree, x *Node) {
 	y := x.left
 	if y != nil {
 		x.left = y.right
@@ -191,29 +219,59 @@ func rightRotate(t *Tree, x *node) {
 	x.parent = y
 }
 
-func splay(t *Tree, x *node) {
+func splay(t *Tree, x *Node) {
 	if x == nil {
 		return
 	}
 	if x.parent != nil {
+		parent := x.parent
+		parent.lock.Lock()
+		x.lock.Lock()
 		if x.parent.parent == nil {
 			if x.parent.left == x {
 				rightRotate(t, x.parent)
 			} else {
 				leftRotate(t, x.parent)
 			}
-		} else if x.parent.left == x && x.parent.parent.left == x.parent {
-			rightRotate(t, x.parent.parent)
-			rightRotate(t, x.parent)
-		} else if x.parent.right == x && x.parent.parent.right == x.parent {
-			leftRotate(t, x.parent.parent)
-			leftRotate(t, x.parent)
-		} else if x.parent.left == x && x.parent.parent.right == x.parent {
-			rightRotate(t, x.parent)
-			leftRotate(t, x.parent)
 		} else {
-			leftRotate(t, x.parent)
-			rightRotate(t, x.parent)
+			grand := x.parent.parent
+			grand.lock.Lock()
+			if x.parent.left == x && x.parent.parent.left == x.parent {
+				rightRotate(t, x.parent.parent)
+				rightRotate(t, x.parent)
+			} else if x.parent.right == x && x.parent.parent.right == x.parent {
+				leftRotate(t, x.parent.parent)
+				leftRotate(t, x.parent)
+			} else if x.parent.left == x && x.parent.parent.right == x.parent {
+				rightRotate(t, x.parent)
+				leftRotate(t, x.parent)
+			} else {
+				leftRotate(t, x.parent)
+				rightRotate(t, x.parent)
+			}
+			grand.lock.Unlock()
 		}
+		x.lock.Unlock()
+		parent.lock.Unlock()
 	}
+}
+
+func replace(t *Tree, u, v *Node) {
+	if u.parent == nil {
+		t.root = v
+	} else if u == u.parent.left {
+		u.parent.left = v
+	} else {
+		u.parent.right = v
+	}
+	if v != nil {
+		v.parent = u.parent
+	}
+}
+
+func subtreeMinimum(n *Node) *Node {
+	for n.left != nil {
+		n = n.left
+	}
+	return n
 }

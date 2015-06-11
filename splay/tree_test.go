@@ -1,7 +1,7 @@
 package splay
 
 import (
-	"fmt"
+	// "fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -130,7 +130,6 @@ func TestGetSameKeyShouldEventuallyMoveNodeToRoot(t *testing.T) {
 			break
 		}
 	}
-	fmt.Printf("Key: %s\n", key)
 	fakeTree.Insert(key, "{'test': 'abcdas'}")
 	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
 	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
@@ -152,13 +151,36 @@ func TestGetSameKeyShouldEventuallyMoveNodeToRoot(t *testing.T) {
 func TestCannotModifyTreeIfRootIsLocked(t *testing.T) {
 	fakeTree := createDefaultTreeWithRoot()
 	fakeTree.root.lock.Lock()
-	fmt.Println("Acquired lock")
 	go func() {
-		fmt.Println("From goroutine, trying to acquire lock")
 		fakeTree.root.lock.Lock()
-		fmt.Println("From goroutine, acquired lock")
+		fakeTree.root.lock.Unlock()
 	}()
 	time.Sleep(time.Second)
 	fakeTree.root.lock.Unlock()
-	fmt.Println("Released lock")
+}
+
+func TestRemoveSuccessfullyRemovesNodeFromTree(t *testing.T) {
+	fakeTree := createPopulatedTree()
+	var key string
+	for {
+		key = randSeq(5)
+		if fakeTree.Get(key) == nil {
+			break
+		}
+	}
+	fakeTree.Insert(key, "{'test': 'abcdas'}")
+	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
+	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
+	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
+	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
+	if err := fakeTree.Remove(key); err != nil {
+		t.Fatalf("Expected to successfully remove key %s, got an error ", key)
+	}
+	if n := fakeTree.Get(key); n != nil {
+		t.Fatalf("Found key %s, expected to be removed from the tree", key)
+	}
+}
+
+func TestRemoveReturnErrorIfKeyDoesntExist(t *testing.T) {
+
 }
