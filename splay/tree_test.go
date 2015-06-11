@@ -174,7 +174,7 @@ func TestRemoveSuccessfullyRemovesNodeFromTree(t *testing.T) {
 	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
 	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
 	if err := fakeTree.Remove(key); err != nil {
-		t.Fatalf("Expected to successfully remove key %s, got an error ", key)
+		t.Fatalf("It should have successfully removed key %s, got an error instead", key)
 	}
 	if n := fakeTree.Get(key); n != nil {
 		t.Fatalf("Found key %s, expected to be removed from the tree", key)
@@ -182,5 +182,8 @@ func TestRemoveSuccessfullyRemovesNodeFromTree(t *testing.T) {
 }
 
 func TestRemoveReturnErrorIfKeyDoesntExist(t *testing.T) {
-
+	fakeTree := createTreeWithRoot("test", "test 2")
+	if err := fakeTree.Remove("notexistent"); err == nil {
+		t.Fatalf("It should have thrown an error on removing non existent key")
+	}
 }
