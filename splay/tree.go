@@ -63,8 +63,7 @@ func (t *Tree) Remove(key string) error {
 	if node == nil {
 		return errors.New("Key does not exist.")
 	}
-	splay(t, node)
-
+	// splay(t, node)
 	if node.left == nil {
 		replace(t, node, node.right)
 	} else if node.right == nil {
@@ -143,6 +142,22 @@ func compare(a, b string) int {
 		return 0
 	}
 	return 1
+}
+
+func synchronize(nodes ...*Node) {
+	for _, node := range nodes {
+		if node != nil && node.lock != nil {
+			node.lock.Lock()
+		}
+	}
+}
+
+func release(nodes ...*Node) {
+	for _, node := range nodes {
+		if node != nil && node.lock != nil {
+			node.lock.Unlock()
+		}
+	}
 }
 
 func (t *Tree) print() {
@@ -257,6 +272,8 @@ func splay(t *Tree, x *Node) {
 }
 
 func replace(t *Tree, u, v *Node) {
+	parent := u.parent
+	synchronize(u.parent, u, v)
 	if u.parent == nil {
 		t.root = v
 	} else if u == u.parent.left {
@@ -267,6 +284,7 @@ func replace(t *Tree, u, v *Node) {
 	if v != nil {
 		v.parent = u.parent
 	}
+	release(parent, u, v)
 }
 
 func subtreeMinimum(n *Node) *Node {
