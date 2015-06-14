@@ -240,8 +240,7 @@ func splay(t *Tree, x *Node) {
 	}
 	if x.parent != nil {
 		parent := x.parent
-		parent.lock.Lock()
-		x.lock.Lock()
+		synchronize(parent, x)
 		if x.parent.parent == nil {
 			if x.parent.left == x {
 				rightRotate(t, x.parent)
@@ -250,7 +249,7 @@ func splay(t *Tree, x *Node) {
 			}
 		} else {
 			grand := x.parent.parent
-			grand.lock.Lock()
+			synchronize(grand)
 			if x.parent.left == x && x.parent.parent.left == x.parent {
 				rightRotate(t, x.parent.parent)
 				rightRotate(t, x.parent)
@@ -264,10 +263,9 @@ func splay(t *Tree, x *Node) {
 				leftRotate(t, x.parent)
 				rightRotate(t, x.parent)
 			}
-			grand.lock.Unlock()
+			release(grand)
 		}
-		x.lock.Unlock()
-		parent.lock.Unlock()
+		release(x, parent)
 	}
 }
 
@@ -284,7 +282,7 @@ func replace(t *Tree, u, v *Node) {
 	if v != nil {
 		v.parent = u.parent
 	}
-	release(parent, u, v)
+	release(v, u, parent)
 }
 
 func subtreeMinimum(n *Node) *Node {
