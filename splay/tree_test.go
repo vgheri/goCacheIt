@@ -187,3 +187,41 @@ func TestRemoveReturnErrorIfKeyDoesntExist(t *testing.T) {
 		t.Fatalf("It should have thrown an error on removing non existent key")
 	}
 }
+
+var result error
+
+func BenchmarkInsert(b *testing.B) {
+	fakeTree := createPopulatedTree()
+	var err error
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		var key string
+		for {
+			key = randSeq(5)
+			if fakeTree.Get(key) == nil {
+				break
+			}
+		}
+		err = fakeTree.Insert(key, "{'test': 'abcdas'}")
+	}
+	result = err
+}
+
+func BenchmarkParallelInsert(b *testing.B) {
+	fakeTree := createPopulatedTree()
+	var err error
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			var key string
+			for {
+				key = randSeq(5)
+				if fakeTree.Get(key) == nil {
+					break
+				}
+			}
+			err = fakeTree.Insert(key, "{'test': 'abcdas'}")
+		}
+	})
+	result = err
+}

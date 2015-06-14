@@ -238,30 +238,29 @@ func splay(t *Tree, x *Node) {
 	if x == nil {
 		return
 	}
-	if x.parent != nil {
-		parent := x.parent
+	if parent := x.parent; parent != nil {
 		synchronize(parent, x)
-		if x.parent.parent == nil {
-			if x.parent.left == x {
-				rightRotate(t, x.parent)
+		if parent.parent == nil {
+			if parent.left == x {
+				rightRotate(t, parent)
 			} else {
-				leftRotate(t, x.parent)
+				leftRotate(t, parent)
 			}
 		} else {
-			grand := x.parent.parent
+			grand := parent.parent
 			synchronize(grand)
-			if x.parent.left == x && x.parent.parent.left == x.parent {
-				rightRotate(t, x.parent.parent)
-				rightRotate(t, x.parent)
-			} else if x.parent.right == x && x.parent.parent.right == x.parent {
-				leftRotate(t, x.parent.parent)
-				leftRotate(t, x.parent)
-			} else if x.parent.left == x && x.parent.parent.right == x.parent {
-				rightRotate(t, x.parent)
-				leftRotate(t, x.parent)
+			if parent.left == x && parent.parent.left == parent {
+				rightRotate(t, parent.parent)
+				rightRotate(t, parent)
+			} else if parent.right == x && parent.parent.right == parent {
+				leftRotate(t, parent.parent)
+				leftRotate(t, parent)
+			} else if parent.left == x && parent.parent.right == parent {
+				rightRotate(t, parent)
+				leftRotate(t, parent)
 			} else {
-				leftRotate(t, x.parent)
-				rightRotate(t, x.parent)
+				leftRotate(t, parent)
+				rightRotate(t, parent)
 			}
 			release(grand)
 		}
