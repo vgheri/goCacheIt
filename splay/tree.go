@@ -22,14 +22,29 @@ type Node struct {
 
 // Tree is the basic type for the splay package
 type Tree struct {
-	root *Node
+	root      *Node
+	splayChan chan *Node
 }
 
 // New initializes the Tree structure by setting the root node to nil
 func New() *Tree {
 	t := new(Tree)
 	t.root = nil
+	t.splayChan = make(chan *Node)
+	go t.goSplay()
 	return t
+}
+
+// Splay go routine
+func (t *Tree) goSplay() {
+	for {
+		node, more := <-t.splayChan
+		if more {
+			splay(t, node)
+		} else {
+			return
+		}
+	}
 }
 
 // Insert a key-value couple into the tree
@@ -42,7 +57,7 @@ func (t *Tree) Insert(key string, value Any) error {
 	}
 	node := insertNode(key, value, t.root, nil, t)
 
-	splay(t, node)
+	t.splayChan <- node
 	return nil
 }
 
@@ -52,7 +67,7 @@ func (t *Tree) Get(key string) *Node {
 	if node == nil {
 		return nil
 	}
-	splay(t, node)
+	t.splayChan <- node
 	return node
 }
 
@@ -63,7 +78,6 @@ func (t *Tree) Remove(key string) error {
 	if node == nil {
 		return errors.New("Key does not exist.")
 	}
-	// splay(t, node)
 	if node.left == nil {
 		replace(t, node, node.right)
 	} else if node.right == nil {
@@ -144,21 +158,21 @@ func compare(a, b string) int {
 	return 1
 }
 
-func synchronize(nodes ...*Node) {
-	for _, node := range nodes {
-		if node != nil && node.lock != nil {
-			node.lock.Lock()
-		}
-	}
-}
-
-func release(nodes ...*Node) {
-	for _, node := range nodes {
-		if node != nil && node.lock != nil {
-			node.lock.Unlock()
-		}
-	}
-}
+// func synchronize(nodes ...*Node) {
+// 	for _, node := range nodes {
+// 		if node != nil && node.lock != nil {
+// 			node.lock.Lock()
+// 		}
+// 	}
+// }
+//
+// func release(nodes ...*Node) {
+// 	for _, node := range nodes {
+// 		if node != nil && node.lock != nil {
+// 			node.lock.Unlock()
+// 		}
+// 	}
+// }
 
 func (t *Tree) print() {
 	if t == nil || t.root == nil {
@@ -239,7 +253,7 @@ func splay(t *Tree, x *Node) {
 		return
 	}
 	if parent := x.parent; parent != nil {
-		synchronize(parent, x)
+		// synchronize(parent, x)
 		if parent.parent == nil {
 			if parent.left == x {
 				rightRotate(t, parent)
@@ -247,8 +261,8 @@ func splay(t *Tree, x *Node) {
 				leftRotate(t, parent)
 			}
 		} else {
-			grand := parent.parent
-			synchronize(grand)
+			// grand := parent.parent
+			// synchronize(grand)
 			if parent.left == x && parent.parent.left == parent {
 				rightRotate(t, parent.parent)
 				rightRotate(t, parent)
@@ -262,15 +276,15 @@ func splay(t *Tree, x *Node) {
 				leftRotate(t, parent)
 				rightRotate(t, parent)
 			}
-			release(grand)
+			// release(grand)
 		}
-		release(x, parent)
+		// release(x, parent)
 	}
 }
 
 func replace(t *Tree, u, v *Node) {
-	parent := u.parent
-	synchronize(u.parent, u, v)
+	// parent := u.parent
+	// synchronize(u.parent, u, v)
 	if u.parent == nil {
 		t.root = v
 	} else if u == u.parent.left {
@@ -281,7 +295,7 @@ func replace(t *Tree, u, v *Node) {
 	if v != nil {
 		v.parent = u.parent
 	}
-	release(v, u, parent)
+	// release(v, u, parent)
 }
 
 func subtreeMinimum(n *Node) *Node {
