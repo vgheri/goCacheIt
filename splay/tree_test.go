@@ -52,7 +52,7 @@ func TestInsertRootCorrectly(t *testing.T) {
 	fakeKey := "myRoot"
 	fakeValue := "{'test': 'value'}"
 	fakeTree := createTreeWithRoot(fakeKey, fakeValue)
-	close(fakeTree.splayChan)
+	close(fakeTree.jobs)
 	if fakeTree.root == nil {
 		t.Fatalf("Root node not added")
 	}
@@ -67,31 +67,17 @@ func TestInsertRootCorrectly(t *testing.T) {
 	}
 }
 
-// func TestInsertNodeOnLeftOfRoot(t *testing.T) {
-// 	fakeTree := createDefaultTreeWithRoot()
-// 	fakeKey := "testLeft"
-// 	fakeValue := "{'testLeft': 'value2'}"
-// 	fakeTree.Insert(fakeKey, fakeValue)
-// 	close(fakeTree.splayChan)
-// 	if fakeTree.root.key != "testLeft" {
-// 		t.Fatalf("Expecting new inserted node to be root, it is not.")
-// 	}
-// 	if fakeTree.root.left.key != "myRoot" {
-// 		t.Fatal("Expected former root node to be new root's left node, but it wasn't.")
-// 	}
-// }
-
 func TestCannotInsertDuplicateKey(t *testing.T) {
 	fakeTree := createEmptyTree()
-	err := fakeTree.Insert("a", "b")
+	_, err := fakeTree.Insert("a", "b")
 	if err != nil {
 		t.Fatal("It should have been able to insert node")
 	}
-	err2 := fakeTree.Insert("a", "c")
+	_, err2 := fakeTree.Insert("a", "c")
 	if err2 == nil {
 		t.Fatal("It should have raised an error")
 	}
-	close(fakeTree.splayChan)
+	close(fakeTree.jobs)
 }
 
 func TestCanInsertNodeAndCanGetItsValue(t *testing.T) {
@@ -99,15 +85,15 @@ func TestCanInsertNodeAndCanGetItsValue(t *testing.T) {
 	var key string
 	for {
 		key = randSeq(5)
-		if fakeTree.Get(key) == nil {
+		if node, _ := fakeTree.Get(key); node == nil {
 			break
 		}
 	}
 	fakeTree.Insert(key, "{'test': 'abcdas'}")
-	if fakeTree.Get(key) == nil {
+	if node, _ := fakeTree.Get(key); node == nil {
 		t.Fatalf("It should have been able to find key %s", key)
 	}
-	close(fakeTree.splayChan)
+	close(fakeTree.jobs)
 }
 
 func TestGetNonExistentNodeReturnsNil(t *testing.T) {
@@ -115,54 +101,42 @@ func TestGetNonExistentNodeReturnsNil(t *testing.T) {
 	fakeTree.Insert("a", "b")
 	fakeTree.Insert("S", "c")
 	fakeTree.Insert("f", "e")
-	value := fakeTree.Get("T")
+	value, _ := fakeTree.Get("T")
 	if value != nil {
 		t.Fatal("Getting a non existent key should have returned nil")
 	}
 }
 
-// func TestGetSameKeyShouldEventuallyMoveNodeToRoot(t *testing.T) {
-// 	fakeTree := createPopulatedTree()
-// 	var key string
-// 	for {
-// 		key = randSeq(5)
-// 		if fakeTree.Get(key) == nil {
-// 			break
-// 		}
-// 	}
-// 	fakeTree.Insert(key, "{'test': 'abcdas'}")
-// 	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
-// 	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
-// 	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
-// 	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
-// 	maxIterations := 10
-// 	iterations := 0
-// 	for fakeTree.root.key != key {
-// 		if fakeTree.Get(key) == nil {
-// 			t.Fatalf("It should have been able to find key %s", key)
-// 		}
-// 		iterations++
-// 		if iterations == maxIterations {
-// 			t.Fatal("It should have already moved the node to the root")
-// 		}
-// 	}
-// }
-//
-// func TestCannotModifyTreeIfRootIsLocked(t *testing.T) {
-// 	fakeTree := createDefaultTreeWithRoot()
-// 	fakeTree.root.lock.Lock()
-// 	go func() {
-// 		fakeTree.root.lock.Lock()
-// 		fakeTree.root.lock.Unlock()
-// 	}()
-// 	time.Sleep(time.Second)
-// 	fakeTree.root.lock.Unlock()
-// }
-//
+func TestGetSameKeyShouldEventuallyMoveNodeToRoot(t *testing.T) {
+	fakeTree := createPopulatedTree()
+	var key string
+	for {
+		key = randSeq(5)
+		if node, _ := fakeTree.Get(key); node == nil {
+			break
+		}
+	}
+	fakeTree.Insert(key, "{'test': 'abcdas'}")
+	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
+	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
+	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
+	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
+	maxIterations := 10
+	iterations := 0
+	for fakeTree.root.key != key {
+		if node, _ := fakeTree.Get(key); node == nil {
+			t.Fatalf("It should have been able to find key %s", key)
+		}
+		iterations++
+		if iterations == maxIterations {
+			t.Fatal("It should have already moved the node to the root")
+		}
+	}
+}
 
 func TestRemoveReturnErrorIfKeyDoesntExist(t *testing.T) {
 	fakeTree := createTreeWithRoot("test", "test 2")
-	if err := fakeTree.Remove("notexistent"); err == nil {
+	if _, err := fakeTree.Remove("notexistent"); err == nil {
 		t.Fatalf("It should have thrown an error on removing non existent key")
 	}
 }
@@ -177,14 +151,16 @@ func BenchmarkInsert(b *testing.B) {
 		var key string
 		for {
 			key = randSeq(5)
-			if fakeTree.Get(key) == nil {
+			if node, _ := fakeTree.Get(key); node == nil {
 				break
 			}
 		}
-		err = fakeTree.Insert(key, "{'test': 'abcdas'}")
+		_, err = fakeTree.Insert(key, "{'test': 'abcdas'}")
+		// fmt.Printf("Round %d\n", i)
+		// fakeTree.print()
 	}
 	result = err
-	close(fakeTree.splayChan)
+	close(fakeTree.jobs)
 }
 
 func BenchmarkParallelInsert(b *testing.B) {
@@ -196,13 +172,13 @@ func BenchmarkParallelInsert(b *testing.B) {
 			var key string
 			for {
 				key = randSeq(5)
-				if fakeTree.Get(key) == nil {
+				if node, _ := fakeTree.Get(key); node == nil {
 					break
 				}
 			}
-			err = fakeTree.Insert(key, "{'test': 'abcdas'}")
+			_, err = fakeTree.Insert(key, "{'test': 'abcdas'}")
 		}
 	})
 	result = err
-	close(fakeTree.splayChan)
+	close(fakeTree.jobs)
 }

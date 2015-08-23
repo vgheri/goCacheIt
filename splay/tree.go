@@ -8,6 +8,9 @@ import (
 )
 
 const keyMaxLength int = 255
+const commandInsertNode string = "insert"
+const commandGetNode string = "get"
+const commandRemoveNode string = "remove"
 
 // Any defines a generic type accepted by the Tree as a value
 type Any interface{}
@@ -22,25 +25,45 @@ type Node struct {
 
 // Tree is the basic type for the splay package
 type Tree struct {
-	root      *Node
-	splayChan chan *Node
+	root *Node
+	jobs chan *job
+}
+
+type job struct {
+	command string
+	node    *Node
+	done    chan *Node
 }
 
 // New initializes the Tree structure by setting the root node to nil
 func New() *Tree {
 	t := new(Tree)
 	t.root = nil
-	t.splayChan = make(chan *Node)
-	go t.goSplay()
+	t.jobs = make(chan *job)
+	go t.workerLoop()
 	return t
 }
 
-// Splay go routine
-func (t *Tree) goSplay() {
+// worker loop
+func (t *Tree) workerLoop() {
 	for {
-		node, more := <-t.splayChan
+		var node *Node
+		job, more := <-t.jobs
 		if more {
-			splay(t, node)
+			if job != nil {
+				switch job.command {
+				case commandInsertNode:
+					node = insertNode(job.node.key, job.node.value, t.root, nil, t)
+				case commandGetNode:
+					node = getNode(job.node.key, t.root)
+					splay(t, node)
+				case commandRemoveNode:
+					node = removeNode(job.node, t)
+				}
+				if job.done != nil {
+					job.done <- node
+				}
+			}
 		} else {
 			return
 		}
@@ -48,52 +71,70 @@ func (t *Tree) goSplay() {
 }
 
 // Insert a key-value couple into the tree
-func (t *Tree) Insert(key string, value Any) error {
+func (t *Tree) Insert(key string, value Any) (*Node, error) {
 	if !keyIsValid(key) {
-		return errors.New("Invalid key.")
+		return nil, errors.New("Invalid key.")
 	}
-	if t.Get(key) != nil {
-		return errors.New("Key already exists.")
+	if n, _ := t.Get(key); n != nil {
+		return nil, errors.New("Key already exists.")
 	}
-	node := insertNode(key, value, t.root, nil, t)
 
-	t.splayChan <- node
-	return nil
+	// create a job and send it to the jobs channel
+	done := make(chan *Node)
+	job := &job{
+		command: commandInsertNode,
+		node:    newNode(key, value, nil),
+		done:    done,
+	}
+	t.jobs <- job
+	// wait for the operation to complete
+	node := <-done
+	return node, nil
 }
 
 // Get retrieves a node by key. Nil if the key doesn't exist
-func (t *Tree) Get(key string) *Node {
-	node := getNode(key, t.root)
-	if node == nil {
-		return nil
+func (t *Tree) Get(key string) (*Node, error) {
+	if !keyIsValid(key) {
+		return nil, errors.New("Invalid key.")
 	}
-	t.splayChan <- node
-	return node
+
+	// create a job and send it to the jobs channel
+	done := make(chan *Node)
+	job := &job{
+		command: commandGetNode,
+		node:    newNode(key, nil, nil),
+		done:    done,
+	}
+	t.jobs <- job
+	// wait for the operation to complete
+	node := <-done
+
+	return node, nil
 }
 
 // Remove deletes the node with the desired key from the tree.
 // Error if the key does not exist
-func (t *Tree) Remove(key string) error {
-	node := t.Get(key)
-	if node == nil {
-		return errors.New("Key does not exist.")
+func (t *Tree) Remove(key string) (*Node, error) {
+	if !keyIsValid(key) {
+		return nil, errors.New("Invalid key.")
 	}
-	if node.left == nil {
-		replace(t, node, node.right)
-	} else if node.right == nil {
-		replace(t, node, node.left)
-	} else {
-		minimum := subtreeMinimum(node.right)
-		if minimum.parent != node {
-			replace(t, minimum, minimum.right)
-			minimum.right = node.right
-			minimum.right.parent = minimum
-		}
-		replace(t, node, minimum)
-		minimum.left = node.left
-		minimum.left.parent = minimum
+	var node *Node
+	if node, _ = t.Get(key); node == nil {
+		return nil, errors.New("Key does not exist.")
 	}
-	return nil
+
+	// create a job and send it to the jobs channel
+	done := make(chan *Node)
+	job := &job{
+		command: commandRemoveNode,
+		node:    newNode(key, nil, nil),
+		done:    done,
+	}
+	t.jobs <- job
+	// wait for the operation to complete
+	_ = <-done
+
+	return node, nil
 }
 
 /*** Support functions ***/
@@ -137,6 +178,25 @@ func getNode(key string, node *Node) *Node {
 	}
 }
 
+func removeNode(node *Node, t *Tree) *Node {
+	if node.left == nil {
+		replace(t, node, node.right)
+	} else if node.right == nil {
+		replace(t, node, node.left)
+	} else {
+		minimum := subtreeMinimum(node.right)
+		if minimum.parent != node {
+			replace(t, minimum, minimum.right)
+			minimum.right = node.right
+			minimum.right.parent = minimum
+		}
+		replace(t, node, minimum)
+		minimum.left = node.left
+		minimum.left.parent = minimum
+	}
+	return node
+}
+
 func keyIsValid(key string) bool {
 	if len(key) > keyMaxLength {
 		return false
@@ -157,22 +217,6 @@ func compare(a, b string) int {
 	}
 	return 1
 }
-
-// func synchronize(nodes ...*Node) {
-// 	for _, node := range nodes {
-// 		if node != nil && node.lock != nil {
-// 			node.lock.Lock()
-// 		}
-// 	}
-// }
-//
-// func release(nodes ...*Node) {
-// 	for _, node := range nodes {
-// 		if node != nil && node.lock != nil {
-// 			node.lock.Unlock()
-// 		}
-// 	}
-// }
 
 func (t *Tree) print() {
 	if t == nil || t.root == nil {
@@ -253,7 +297,6 @@ func splay(t *Tree, x *Node) {
 		return
 	}
 	if parent := x.parent; parent != nil {
-		// synchronize(parent, x)
 		if parent.parent == nil {
 			if parent.left == x {
 				rightRotate(t, parent)
@@ -261,8 +304,6 @@ func splay(t *Tree, x *Node) {
 				leftRotate(t, parent)
 			}
 		} else {
-			// grand := parent.parent
-			// synchronize(grand)
 			if parent.left == x && parent.parent.left == parent {
 				rightRotate(t, parent.parent)
 				rightRotate(t, parent)
@@ -276,15 +317,11 @@ func splay(t *Tree, x *Node) {
 				leftRotate(t, parent)
 				rightRotate(t, parent)
 			}
-			// release(grand)
 		}
-		// release(x, parent)
 	}
 }
 
 func replace(t *Tree, u, v *Node) {
-	// parent := u.parent
-	// synchronize(u.parent, u, v)
 	if u.parent == nil {
 		t.root = v
 	} else if u == u.parent.left {
@@ -295,7 +332,6 @@ func replace(t *Tree, u, v *Node) {
 	if v != nil {
 		v.parent = u.parent
 	}
-	// release(v, u, parent)
 }
 
 func subtreeMinimum(n *Node) *Node {
