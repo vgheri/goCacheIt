@@ -19,7 +19,7 @@ type Any interface{}
 type Node struct {
 	parent, left, right *Node
 	key                 string
-	value               Any
+	Value               Any
 	lock                *sync.Mutex
 }
 
@@ -53,7 +53,7 @@ func (t *Tree) workerLoop() {
 			if job != nil {
 				switch job.command {
 				case commandInsertNode:
-					node = insertNode(job.node.key, job.node.value, t.root, nil, t)
+					node = insertNode(job.node.key, job.node.Value, t.root, nil, t)
 				case commandGetNode:
 					node = getNode(job.node.key, t.root)
 					splay(t, node)
@@ -139,7 +139,7 @@ func (t *Tree) Remove(key string) (*Node, error) {
 
 /*** Support functions ***/
 func newNode(key string, value Any, parent *Node) *Node {
-	return &Node{parent: parent, left: nil, right: nil, key: key, value: value, lock: &sync.Mutex{}}
+	return &Node{parent: parent, left: nil, right: nil, key: key, Value: value, lock: &sync.Mutex{}}
 }
 
 func insertNode(key string, value Any, current, parent *Node, t *Tree) *Node {

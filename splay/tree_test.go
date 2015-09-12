@@ -59,11 +59,11 @@ func TestInsertRootCorrectly(t *testing.T) {
 	if fakeTree.root.key != "myRoot" {
 		t.Fatalf("Expected key %s, found %s", fakeKey, fakeTree.root.key)
 	}
-	if fakeTree.root.value == nil {
+	if fakeTree.root.Value == nil {
 		t.Fatalf("Expecting value not nil, found nil")
 	}
-	if fakeTree.root.value != fakeValue {
-		t.Fatalf("Expected value %s, found %s", fakeValue, fakeTree.root.value)
+	if fakeTree.root.Value != fakeValue {
+		t.Fatalf("Expected value %s, found %s", fakeValue, fakeTree.root.Value)
 	}
 }
 
