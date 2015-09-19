@@ -8,6 +8,8 @@ import (
 	"net/http"
 )
 
+const mimeTypeJSON string = "application/json; charset=UTF-8"
+
 var dataStore *splay.Tree
 
 // KeyValueCouple models the input data for the POST request
@@ -41,20 +43,21 @@ func handleGetValueByKey(w http.ResponseWriter, r *http.Request) {
 	key := vars["key"]
 	node, err := dataStore.Get(key)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeJSONError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if node == nil {
-		http.Error(w, "Key not found", http.StatusNotFound)
+		writeJSONError(w, "Key not found", http.StatusNotFound)
 		return
 	}
 	value, err := json.Marshal(node.Value)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", mimeTypeJSON)
 	w.Write(value)
+	return
 }
 
 func handlePostValueByKey(w http.ResponseWriter, r *http.Request) {
@@ -62,26 +65,30 @@ func handlePostValueByKey(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&reqBody); err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-		w.WriteHeader(422) // unprocessable entity
-		apiErr := APIError{Message: err.Error()}
-		if err := json.NewEncoder(w).Encode(apiErr); err != nil {
-			panic(err)
-		}
+		writeJSONError(w, err.Error(), 422)
 		return
 	}
 
-	if reqBody.Key == "" /*|| len(reqBody.Value) == 0*/ {
-		http.Error(w, "Please specify a valid key and a value",
+	if reqBody.Key == "" {
+		writeJSONError(w, "Please specify a valid key and a value",
 			http.StatusBadRequest)
 		return
 	}
 	_, err := dataStore.Insert(reqBody.Key, reqBody.Value)
 	if err != nil {
-		http.Error(w, err.Error(),
+		writeJSONError(w, err.Error(),
 			http.StatusBadRequest)
 		return
 	}
-
 	w.WriteHeader(http.StatusCreated)
+	return
+}
+
+func writeJSONError(w http.ResponseWriter, errorMsg string, httpErrorCode int) {
+	w.Header().Set("Content-Type", mimeTypeJSON)
+	w.WriteHeader(httpErrorCode)
+	apiErr := APIError{Message: errorMsg}
+	if err := json.NewEncoder(w).Encode(apiErr); err != nil {
+		panic(err)
+	}
 }
