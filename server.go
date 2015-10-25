@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/vgheri/goCacheIt/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/vgheri/goCacheIt/handlers"
 	"github.com/vgheri/goCacheIt/routes"
@@ -11,17 +12,17 @@ import (
 
 const mimeTypeJSON string = "application/json; charset=UTF-8"
 
-var dataStore *splay.Tree
-
 func main() {
 	log.Println("Starting server...")
+	log.Printf("Max memory to be used: %d MB", maxMemory)
 	log.Println("Initializing data store...")
-	// TODO read from flags
-	var maxMemory uint64 = 1
-	dataStore = splay.New(maxMemory)
+	dataStore := splay.New(maxMemory)
+	log.Println("Initializing web server...")
 	server := mux.NewRouter()
 	handler := handlers.New(dataStore)
 	routes.SetupRoutes(server, handler)
 	http.Handle("/", server)
-	log.Fatal(http.ListenAndServe(":3000", nil))
+	port := fmt.Sprintf(":%d", webServerPort)
+	log.Printf("Server listening on port %d...", webServerPort)
+	log.Fatal(http.ListenAndServe(port, nil))
 }
