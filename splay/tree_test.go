@@ -156,8 +156,6 @@ func BenchmarkInsert(b *testing.B) {
 			}
 		}
 		_, err = fakeTree.Insert(key, "{'test': 'abcdas'}")
-		// fmt.Printf("Round %d\n", i)
-		// fakeTree.print()
 	}
 	result = err
 	close(fakeTree.jobs)

@@ -1,12 +1,12 @@
 package splay
 
 import (
-	//"fmt"
+	// "fmt"
 	"testing"
 )
 
 func createFixedTree() *Tree {
-	fakeTree := New(1)
+	fakeTree := New(500)
 	fakeTree.Insert("middle", "{'test': 'value_Abc'}")
 	fakeTree.Insert("Amount", "{'test': 'value1'}")
 	fakeTree.Insert("First", "{'test': 'value2'}")
@@ -28,15 +28,77 @@ func TestMarkCorrectlyMarksNodeForDeletion(t *testing.T) {
 	for _, n := range nodesToRemove {
 		if n.key != "Delta" && n.key != "Geneve" && n.key != "moriarty" &&
 			n.key != "opportunity" && n.key != "sansa" {
-			t.Fatalf("Wrong node marked for deletion. Expected one between"+
+			t.Fatalf("Wrong nodes marked for deletion. Expected "+
 				"Delta, Geneve, moriarty, opportunity and sansa. Found %s.", n.key)
 		}
 	}
 }
 
-func TestSweepRemovesMarkedNodesForDeletion(t *testing.T) {
+func TestFreeMemoryRemovesMarkedNodesForDeletion(t *testing.T) {
 	tree := createFixedTree()
-	mark(tree)
-	sweep(tree)
-	// Check we have the good nodes remaining
+	tree.freeMemory()
+	tree.shouldContain("middle", t)
+	tree.shouldContain("Amount", t)
+	tree.shouldContain("First", t)
+	tree.shouldContain("netstat", t)
+	tree.shouldContain("nelly", t)
+	tree.shouldContain("nefertity", t)
+	tree.shouldContain("polly", t)
+	tree.shouldNotContain("Delta", t)
+	tree.shouldNotContain("Geneve", t)
+	tree.shouldNotContain("moriarty", t)
+	tree.shouldNotContain("opportunity", t)
+	tree.shouldNotContain("sansa", t)
+}
+
+func TestRuningFreeMemoryMultipleTimes(t *testing.T) {
+	tree := createFixedTree()
+	tree.freeMemory()
+	tree.shouldContain("middle", t)
+	tree.shouldContain("Amount", t)
+	tree.shouldContain("First", t)
+	tree.shouldContain("netstat", t)
+	tree.shouldContain("nelly", t)
+	tree.shouldContain("nefertity", t)
+	tree.shouldContain("polly", t)
+	tree.shouldNotContain("Delta", t)
+	tree.shouldNotContain("Geneve", t)
+	tree.shouldNotContain("moriarty", t)
+	tree.shouldNotContain("opportunity", t)
+	tree.shouldNotContain("sansa", t)
+	tree.freeMemory()
+	tree.shouldContain("First", t)
+	tree.shouldContain("netstat", t)
+	tree.shouldContain("nelly", t)
+	tree.shouldContain("nefertity", t)
+	tree.shouldContain("polly", t)
+	tree.shouldNotContain("middle", t)
+	tree.shouldNotContain("Amount", t)
+}
+
+// func TestMemoryUsage(t *testing.T) {
+// 	tree := createFixedTree()
+// 	for {
+// 		var key string
+// 		for {
+// 			key = randSeq(5)
+// 			if node, _ := tree.Get(key); node == nil {
+// 				break
+// 			}
+// 		}
+// 		_, _ = tree.Insert(key, "{'test': 'asdasdadasasdasdadasasdasdadasasdasdadasasdasdadasasdasdadas'}")
+// 	}
+// 	close(tree.jobs)
+// }
+
+func (tree *Tree) shouldContain(key string, t *testing.T) {
+	if n, _ := tree.Get(key); n == nil {
+		t.Fatalf("Expected to find node %s. Found none.", key)
+	}
+}
+
+func (tree *Tree) shouldNotContain(key string, t *testing.T) {
+	if n, _ := tree.Get(key); n != nil {
+		t.Fatalf("It should not have found node %s. Found it instead.", key)
+	}
 }

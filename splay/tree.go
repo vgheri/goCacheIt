@@ -10,28 +10,11 @@ import (
 // expressed in MegaBytes
 var maxMemory uint64
 
-// Global constansts
-const keyMaxLength int = 255
-const commandInsertNode string = "insert"
-const commandGetNode string = "get"
-const commandRemoveNode string = "remove"
-const memoryCheckFrequency = 1 * time.Second
-
-// when at 90% of maxMemory, trigger cache eviction
-const memoryUsageThreshold byte = 90
-
 // Global variables
 var cacheEvictionTicker *time.Ticker
 
 // Any defines a generic type accepted by the Tree as a value
 type Any interface{}
-
-// Node is the type for tree elements
-type Node struct {
-	parent, left, right *Node
-	key                 string
-	Value               Any
-}
 
 // Tree is the basic type for the splay package
 type Tree struct {
@@ -84,14 +67,14 @@ func (t *Tree) workerLoop() {
 				return
 			}
 		case <-cacheEvictionTicker.C:
-			for shouldFreeMemory() {
-				// TODO if yes, free memory
+			if shouldFreeMemory() {
+				t.freeMemory()
 			}
 		}
 	}
 }
 
-// Insert a key-value couple into the tree
+// Insert adds a key-value couple into the tree
 func (t *Tree) Insert(key string, value Any) (*Node, error) {
 	if !keyIsValid(key) {
 		return nil, errors.New("Invalid key.")
@@ -159,10 +142,6 @@ func (t *Tree) Remove(key string) (*Node, error) {
 }
 
 /*** Support functions ***/
-func newNode(key string, value Any, parent *Node) *Node {
-	return &Node{parent: parent, left: nil, right: nil, key: key, Value: value}
-}
-
 func insertNode(key string, value Any, current, parent *Node, t *Tree) *Node {
 	if current == nil {
 		current = newNode(key, value, parent)
@@ -229,10 +208,6 @@ func (t *Tree) setRoot(key string, value Any) {
 	t.root = newNode(key, value, nil)
 }
 
-func (n *Node) isLeaf() bool {
-	return n.left == nil && n.right == nil
-}
-
 func compare(a, b string) int {
 	if a < b {
 		return -1
@@ -242,8 +217,6 @@ func compare(a, b string) int {
 	}
 	return 1
 }
-
-func (t *Tree) walk() {}
 
 func (t *Tree) print() {
 	if t == nil || t.root == nil {
