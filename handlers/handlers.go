@@ -36,8 +36,8 @@ type KeyValueCouple struct {
 
 // APIError models the error object sent back to the client on error
 type APIError struct {
-	Code    int
-	Message string
+	Code    int    //`json:"code"`
+	Message string //`json:"message"`
 }
 
 // getValue retrieves a value by key from the datastore
