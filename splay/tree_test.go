@@ -20,12 +20,12 @@ func randSeq(n int) string {
 }
 
 func createEmptyTree() *Tree {
-	fakeTree := New()
+	fakeTree := New(1)
 	return fakeTree
 }
 
 func createTreeWithRoot(key string, value Any) *Tree {
-	fakeTree := New()
+	fakeTree := New(1)
 	fakeTree.Insert(key, value)
 	return fakeTree
 }
@@ -36,7 +36,7 @@ func createDefaultTreeWithRoot() *Tree {
 
 func createPopulatedTree() *Tree {
 
-	fakeTree := New()
+	fakeTree := New(1)
 	fakeTree.Insert(randSeq(5), "{'test': 'value_Abc'}")
 	fakeTree.Insert(randSeq(5), "{'test': 'value1'}")
 	fakeTree.Insert(randSeq(5), "{'test': 'value2'}")

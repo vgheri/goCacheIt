@@ -4,13 +4,24 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
+	"time"
 )
 
+// expressed in MegaBytes
+var maxMemory uint64
+
+// Global constansts
 const keyMaxLength int = 255
 const commandInsertNode string = "insert"
 const commandGetNode string = "get"
 const commandRemoveNode string = "remove"
+const memoryCheckFrequency = 1 * time.Second
+
+// when at 90% of maxMemory, trigger cache eviction
+const memoryUsageThreshold byte = 90
+
+// Global variables
+var cacheEvictionTicker *time.Ticker
 
 // Any defines a generic type accepted by the Tree as a value
 type Any interface{}
@@ -20,7 +31,6 @@ type Node struct {
 	parent, left, right *Node
 	key                 string
 	Value               Any
-	lock                *sync.Mutex
 }
 
 // Tree is the basic type for the splay package
@@ -36,10 +46,14 @@ type job struct {
 }
 
 // New initializes the Tree structure by setting the root node to nil
-func New() *Tree {
+// maxAmountOfMemory is expressed in MegaBytes
+// TODO New should take an option object as input
+func New(maxAmountOfMemory uint64) *Tree {
 	t := new(Tree)
 	t.root = nil
 	t.jobs = make(chan *job)
+	cacheEvictionTicker = time.NewTicker(memoryCheckFrequency)
+	maxMemory = maxAmountOfMemory
 	go t.workerLoop()
 	return t
 }
@@ -47,25 +61,32 @@ func New() *Tree {
 // worker loop
 func (t *Tree) workerLoop() {
 	for {
-		var node *Node
-		job, more := <-t.jobs
-		if more {
-			if job != nil {
-				switch job.command {
-				case commandInsertNode:
-					node = insertNode(job.node.key, job.node.Value, t.root, nil, t)
-				case commandGetNode:
-					node = getNode(job.node.key, t.root)
-					splay(t, node)
-				case commandRemoveNode:
-					node = removeNode(job.node, t)
+		select {
+		case job, more := <-t.jobs:
+			if more {
+				if job != nil {
+					var node *Node
+					switch job.command {
+					case commandInsertNode:
+						node = insertNode(job.node.key, job.node.Value, t.root, nil, t)
+					case commandGetNode:
+						node = getNode(job.node.key, t.root)
+						splay(t, node)
+					case commandRemoveNode:
+						node = removeNode(job.node, t)
+					}
+					if job.done != nil {
+						job.done <- node
+					}
 				}
-				if job.done != nil {
-					job.done <- node
-				}
+			} else {
+				cacheEvictionTicker.Stop()
+				return
 			}
-		} else {
-			return
+		case <-cacheEvictionTicker.C:
+			for shouldFreeMemory() {
+				// TODO if yes, free memory
+			}
 		}
 	}
 }
@@ -127,7 +148,7 @@ func (t *Tree) Remove(key string) (*Node, error) {
 	done := make(chan *Node)
 	job := &job{
 		command: commandRemoveNode,
-		node:    newNode(key, nil, nil),
+		node:    node,
 		done:    done,
 	}
 	t.jobs <- job
@@ -139,7 +160,7 @@ func (t *Tree) Remove(key string) (*Node, error) {
 
 /*** Support functions ***/
 func newNode(key string, value Any, parent *Node) *Node {
-	return &Node{parent: parent, left: nil, right: nil, key: key, Value: value, lock: &sync.Mutex{}}
+	return &Node{parent: parent, left: nil, right: nil, key: key, Value: value}
 }
 
 func insertNode(key string, value Any, current, parent *Node, t *Tree) *Node {
@@ -208,6 +229,10 @@ func (t *Tree) setRoot(key string, value Any) {
 	t.root = newNode(key, value, nil)
 }
 
+func (n *Node) isLeaf() bool {
+	return n.left == nil && n.right == nil
+}
+
 func compare(a, b string) int {
 	if a < b {
 		return -1
@@ -217,6 +242,8 @@ func compare(a, b string) int {
 	}
 	return 1
 }
+
+func (t *Tree) walk() {}
 
 func (t *Tree) print() {
 	if t == nil || t.root == nil {

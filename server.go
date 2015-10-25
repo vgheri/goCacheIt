@@ -16,7 +16,9 @@ var dataStore *splay.Tree
 func main() {
 	log.Println("Starting server...")
 	log.Println("Initializing data store...")
-	dataStore = splay.New()
+	// TODO read from flags
+	var maxMemory uint64 = 1
+	dataStore = splay.New(maxMemory)
 	server := mux.NewRouter()
 	handler := handlers.New(dataStore)
 	routes.SetupRoutes(server, handler)
