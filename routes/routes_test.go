@@ -17,7 +17,7 @@ var err error
 var respRec *httptest.ResponseRecorder
 
 func setupTest() {
-	dataStore := splay.New()
+	dataStore := splay.New(50)
 	server = mux.NewRouter()
 	handler := handlers.New(dataStore)
 	SetupRoutes(server, handler)
@@ -129,7 +129,7 @@ func TestGetValueReturnsValue(t *testing.T) {
 	body := strings.NewReader(bodyValue)
 	req, err = http.NewRequest("POST", "/api/v1/store/", body)
 	if err != nil {
-		t.Fatalf("Creating 'GET /api/v1/store/%s' request failed!", key)
+		t.Fatal("Creating 'POST /api/v1/store/' request failed!", key)
 	}
 
 	server.ServeHTTP(respRec, req)
@@ -141,7 +141,7 @@ func TestGetValueReturnsValue(t *testing.T) {
 	getRespRec := httptest.NewRecorder()
 	getReq, err := http.NewRequest("GET", "/api/v1/store/"+key, nil)
 	if err != nil {
-		t.Fatal("Creating 'GET /api/v1/store/'" + key + " request failed!")
+		t.Fatalf("Creating 'GET /api/v1/store/%s' request failed!", key)
 	}
 
 	server.ServeHTTP(getRespRec, getReq)
