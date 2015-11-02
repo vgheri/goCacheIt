@@ -3,22 +3,23 @@ package splay
 import (
 	// "fmt"
 	"testing"
+	"time"
 )
 
 func createFixedTree() *Tree {
 	fakeTree := New(500)
-	fakeTree.Insert("middle", "{'test': 'value_Abc'}")
-	fakeTree.Insert("Amount", "{'test': 'value1'}")
-	fakeTree.Insert("First", "{'test': 'value2'}")
-	fakeTree.Insert("Delta", "{'test': 'value3'}")
-	fakeTree.Insert("Geneve", "{'test': 'value4'}")
-	fakeTree.Insert("netstat", "{'test': 'value5'}")
-	fakeTree.Insert("nelly", "{'test': 'value6'}")
-	fakeTree.Insert("nefertity", "{'test': 'value7'}")
-	fakeTree.Insert("moriarty", "{'test': 'value5'}")
-	fakeTree.Insert("polly", "{'test': 'value6'}")
-	fakeTree.Insert("opportunity", "{'test': 'value7'}")
-	fakeTree.Insert("sansa", "{'test': 'value7'}")
+	insertNodeWithDefaultDuration(fakeTree, "middle", "{'test': 'value_Abc'}")
+	insertNodeWithDefaultDuration(fakeTree, "Amount", "{'test': 'value1'}")
+	insertNodeWithDefaultDuration(fakeTree, "First", "{'test': 'value2'}")
+	insertNodeWithDefaultDuration(fakeTree, "Delta", "{'test': 'value3'}")
+	insertNodeWithDefaultDuration(fakeTree, "Geneve", "{'test': 'value4'}")
+	insertNodeWithDefaultDuration(fakeTree, "netstat", "{'test': 'value5'}")
+	insertNodeWithDefaultDuration(fakeTree, "nelly", "{'test': 'value6'}")
+	insertNodeWithDefaultDuration(fakeTree, "nefertity", "{'test': 'value7'}")
+	insertNodeWithDefaultDuration(fakeTree, "moriarty", "{'test': 'value5'}")
+	insertNodeWithDefaultDuration(fakeTree, "polly", "{'test': 'value6'}")
+	insertNodeWithDefaultDuration(fakeTree, "opportunity", "{'test': 'value7'}")
+	insertNodeWithDefaultDuration(fakeTree, "sansa", "{'test': 'value7'}")
 	return fakeTree
 }
 
@@ -91,14 +92,20 @@ func TestRuningFreeMemoryMultipleTimes(t *testing.T) {
 // 	close(tree.jobs)
 // }
 
-func (tree *Tree) shouldContain(key string, t *testing.T) {
-	if n, _ := tree.Get(key); n == nil {
-		t.Fatalf("Expected to find node %s. Found none.", key)
+func TestExpiredKeyShouldBeRemovedFromTree(t *testing.T) {
+	tree := createFixedTree()
+	tree.Insert("somewhere", "{'test': 'value_Abc'}", 500*time.Millisecond)
+	time.Sleep(1 * time.Second)
+	if n, _ := tree.Get("somewhere"); n != nil {
+		t.Fatal("Expired node should have been removed from the tree")
 	}
 }
 
-func (tree *Tree) shouldNotContain(key string, t *testing.T) {
-	if n, _ := tree.Get(key); n != nil {
-		t.Fatalf("It should not have found node %s. Found it instead.", key)
+func TestNotExpiredKeyShouldNotBeRemovedFromTree(t *testing.T) {
+	tree := createFixedTree()
+	tree.Insert("somewhere", "{'test': 'value_Abc'}", 5*time.Second)
+	time.Sleep(1 * time.Second)
+	if n, _ := tree.Get("somewhere"); n == nil {
+		t.Fatal("Not expired node should not have been removed from the tree")
 	}
 }

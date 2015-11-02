@@ -6,6 +6,8 @@ import (
 	"github.com/vgheri/goCacheIt/splay"
 	//"log"
 	"net/http"
+	"strconv"
+	"time"
 )
 
 // Handler is a strictly typed object containing the list of available handlers
@@ -28,10 +30,11 @@ func New(store *splay.Tree) *Handler {
 	return handler
 }
 
-// KeyValueCouple models the input data for the POST request
-type KeyValueCouple struct {
-	Key   string    //`json:"key"`
-	Value splay.Any //`json:"value"`
+// NodeCreationModel models the input data for the POST request
+type NodeCreationModel struct {
+	Key      string    //`json:"key"`
+	Value    splay.Any //`json:"value"`
+	Duration int       //'json:"duration"'
 }
 
 // APIError models the error object sent back to the client on error
@@ -65,7 +68,7 @@ func getValue(w http.ResponseWriter, r *http.Request) {
 
 // addValue adds a couple {key,value} to the datastore
 func addValue(w http.ResponseWriter, r *http.Request) {
-	var reqBody KeyValueCouple
+	var reqBody NodeCreationModel
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&reqBody); err != nil {
@@ -78,7 +81,17 @@ func addValue(w http.ResponseWriter, r *http.Request) {
 			http.StatusBadRequest)
 		return
 	}
-	_, err := dataStore.Insert(reqBody.Key, reqBody.Value)
+
+	if reqBody.Duration <= 0 {
+		writeJSONError(w, "Please specify a valid duration in milliseconds",
+			http.StatusBadRequest)
+	}
+	duration, e := time.ParseDuration((strconv.Itoa(reqBody.Duration) + "ms"))
+	if e != nil {
+		writeJSONError(w, "Please specify a valid duration in milliseconds",
+			http.StatusBadRequest)
+	}
+	_, err := dataStore.Insert(reqBody.Key, reqBody.Value, duration)
 	if err != nil {
 		writeJSONError(w, err.Error(),
 			http.StatusBadRequest)

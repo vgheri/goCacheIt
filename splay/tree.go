@@ -51,12 +51,12 @@ func (t *Tree) workerLoop() {
 					var node *Node
 					switch job.command {
 					case commandInsertNode:
-						node = insertNode(job.node.key, job.node.Value, t.root, nil, t)
+						node = t.insertNode(job.node, t.root, nil)
 					case commandGetNode:
-						node = getNode(job.node.key, t.root)
+						node = t.getNode(job.node.key, t.root)
 						splay(t, node)
 					case commandRemoveNode:
-						node = removeNode(job.node, t)
+						node = t.removeNode(job.node)
 					}
 					if job.done != nil {
 						job.done <- node
@@ -75,7 +75,7 @@ func (t *Tree) workerLoop() {
 }
 
 // Insert adds a key-value couple into the tree
-func (t *Tree) Insert(key string, value Any) (*Node, error) {
+func (t *Tree) Insert(key string, value Any, duration time.Duration) (*Node, error) {
 	if !keyIsValid(key) {
 		return nil, errors.New("Invalid key.")
 	}
@@ -87,7 +87,7 @@ func (t *Tree) Insert(key string, value Any) (*Node, error) {
 	done := make(chan *Node)
 	job := &job{
 		command: commandInsertNode,
-		node:    newNode(key, value, nil),
+		node:    newNode(key, value, nil, duration),
 		done:    done,
 	}
 	t.jobs <- job
@@ -106,7 +106,7 @@ func (t *Tree) Get(key string) (*Node, error) {
 	done := make(chan *Node)
 	job := &job{
 		command: commandGetNode,
-		node:    newNode(key, nil, nil),
+		node:    newNode(key, nil, nil, 1*time.Hour),
 		done:    done,
 	}
 	t.jobs <- job
@@ -142,43 +142,44 @@ func (t *Tree) Remove(key string) (*Node, error) {
 }
 
 /*** Support functions ***/
-func insertNode(key string, value Any, current, parent *Node, t *Tree) *Node {
+func (t *Tree) insertNode(node *Node, current, parent *Node) *Node {
 	if current == nil {
-		current = newNode(key, value, parent)
-		t.root = current
-		return current
+		t.setRoot(node)
+		return node
 	}
-	switch compare(key, current.key) {
+	switch compare(node.key, current.key) {
 	case -1:
 		if current.left == nil {
-			current.left = newNode(key, value, current)
-			return current.left
+			node.parent = current
+			current.left = node
+			return node
 		}
-		return insertNode(key, value, current.left, current, t)
+		return t.insertNode(node, current.left, current)
 	case 1:
 		if current.right == nil {
-			current.right = newNode(key, value, current)
-			return current.right
+			node.parent = current
+			current.right = node
+			return node
 		}
-		return insertNode(key, value, current.right, current, t)
+		return t.insertNode(node, current.right, current)
 	}
 	return nil
 }
 
-func getNode(key string, node *Node) *Node {
+func (t *Tree) getNode(key string, node *Node) *Node {
 	if node == nil {
 		return nil
 	}
 	if key < node.key {
-		return getNode(key, node.left)
+		return t.getNode(key, node.left)
 	} else if key > node.key {
-		return getNode(key, node.right)
+		return t.getNode(key, node.right)
 	} else { // hit!
 		return node
 	}
 }
 
-func removeNode(node *Node, t *Tree) *Node {
+func (t *Tree) removeNode(node *Node) *Node {
 	if node.left == nil {
 		replace(t, node, node.right)
 	} else if node.right == nil {
@@ -204,8 +205,9 @@ func keyIsValid(key string) bool {
 	return true
 }
 
-func (t *Tree) setRoot(key string, value Any) {
-	t.root = newNode(key, value, nil)
+func (t *Tree) setRoot(node *Node) {
+	node.parent = nil
+	t.root = node
 }
 
 func compare(a, b string) int {

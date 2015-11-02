@@ -26,7 +26,7 @@ func createEmptyTree() *Tree {
 
 func createTreeWithRoot(key string, value Any) *Tree {
 	fakeTree := New(1)
-	fakeTree.Insert(key, value)
+	insertNodeWithDefaultDuration(fakeTree, key, value)
 	return fakeTree
 }
 
@@ -37,14 +37,14 @@ func createDefaultTreeWithRoot() *Tree {
 func createPopulatedTree() *Tree {
 
 	fakeTree := New(1)
-	fakeTree.Insert(randSeq(5), "{'test': 'value_Abc'}")
-	fakeTree.Insert(randSeq(5), "{'test': 'value1'}")
-	fakeTree.Insert(randSeq(5), "{'test': 'value2'}")
-	fakeTree.Insert(randSeq(5), "{'test': 'value3'}")
-	fakeTree.Insert(randSeq(5), "{'test': 'value4'}")
-	fakeTree.Insert(randSeq(5), "{'test': 'value5'}")
-	fakeTree.Insert(randSeq(5), "{'test': 'value6'}")
-	fakeTree.Insert(randSeq(5), "{'test': 'value7'}")
+	insertNodeWithDefaultDuration(fakeTree, randSeq(5), "{'test': 'value_Abc'}")
+	insertNodeWithDefaultDuration(fakeTree, randSeq(5), "{'test': 'value1'}")
+	insertNodeWithDefaultDuration(fakeTree, randSeq(5), "{'test': 'value2'}")
+	insertNodeWithDefaultDuration(fakeTree, randSeq(5), "{'test': 'value3'}")
+	insertNodeWithDefaultDuration(fakeTree, randSeq(5), "{'test': 'value4'}")
+	insertNodeWithDefaultDuration(fakeTree, randSeq(5), "{'test': 'value5'}")
+	insertNodeWithDefaultDuration(fakeTree, randSeq(5), "{'test': 'value6'}")
+	insertNodeWithDefaultDuration(fakeTree, randSeq(5), "{'test': 'value7'}")
 	return fakeTree
 }
 
@@ -69,11 +69,11 @@ func TestInsertRootCorrectly(t *testing.T) {
 
 func TestCannotInsertDuplicateKey(t *testing.T) {
 	fakeTree := createEmptyTree()
-	_, err := fakeTree.Insert("a", "b")
+	_, err := insertNodeWithDefaultDuration(fakeTree, "a", "b")
 	if err != nil {
 		t.Fatal("It should have been able to insert node")
 	}
-	_, err2 := fakeTree.Insert("a", "c")
+	_, err2 := insertNodeWithDefaultDuration(fakeTree, "a", "c")
 	if err2 == nil {
 		t.Fatal("It should have raised an error")
 	}
@@ -89,7 +89,7 @@ func TestCanInsertNodeAndCanGetItsValue(t *testing.T) {
 			break
 		}
 	}
-	fakeTree.Insert(key, "{'test': 'abcdas'}")
+	insertNodeWithDefaultDuration(fakeTree, key, "{'test': 'abcdas'}")
 	if node, _ := fakeTree.Get(key); node == nil {
 		t.Fatalf("It should have been able to find key %s", key)
 	}
@@ -98,9 +98,9 @@ func TestCanInsertNodeAndCanGetItsValue(t *testing.T) {
 
 func TestGetNonExistentNodeReturnsNil(t *testing.T) {
 	fakeTree := createEmptyTree()
-	fakeTree.Insert("a", "b")
-	fakeTree.Insert("S", "c")
-	fakeTree.Insert("f", "e")
+	insertNodeWithDefaultDuration(fakeTree, "a", "b")
+	insertNodeWithDefaultDuration(fakeTree, "S", "c")
+	insertNodeWithDefaultDuration(fakeTree, "f", "e")
 	value, _ := fakeTree.Get("T")
 	if value != nil {
 		t.Fatal("Getting a non existent key should have returned nil")
@@ -116,11 +116,11 @@ func TestGetSameKeyShouldEventuallyMoveNodeToRoot(t *testing.T) {
 			break
 		}
 	}
-	fakeTree.Insert(key, "{'test': 'abcdas'}")
-	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
-	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
-	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
-	fakeTree.Insert(randSeq(5), "{'test': 'abcdas'}")
+	insertNodeWithDefaultDuration(fakeTree, key, "{'test': 'abcdas'}")
+	insertNodeWithDefaultDuration(fakeTree, randSeq(5), "{'test': 'abcdas'}")
+	insertNodeWithDefaultDuration(fakeTree, randSeq(5), "{'test': 'abcdas'}")
+	insertNodeWithDefaultDuration(fakeTree, randSeq(5), "{'test': 'abcdas'}")
+
 	maxIterations := 10
 	iterations := 0
 	for fakeTree.root.key != key {
@@ -155,7 +155,7 @@ func BenchmarkInsert(b *testing.B) {
 				break
 			}
 		}
-		_, err = fakeTree.Insert(key, "{'test': 'abcdas'}")
+		_, err = insertNodeWithDefaultDuration(fakeTree, key, "{'test': 'abcdas'}")
 	}
 	result = err
 	close(fakeTree.jobs)
@@ -174,7 +174,7 @@ func BenchmarkParallelInsert(b *testing.B) {
 					break
 				}
 			}
-			_, err = fakeTree.Insert(key, "{'test': 'abcdas'}")
+			_, err = insertNodeWithDefaultDuration(fakeTree, key, "{'test': 'abcdas'}")
 		}
 	})
 	result = err

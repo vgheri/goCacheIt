@@ -68,7 +68,25 @@ func TestAddValueReturnsBadRequest(t *testing.T) {
 		"sjdkajsdkjaskdjaksjdkasjdkasjkdajskdjaksdjkasjdkasjkdjSjsdjaskjdkasjdka" +
 		"sjdkajsdkjaskdjaksjdkasjdkasjkdajskdjaksdjkasjdkasjkdjSjsdjaskjdkasjdka"
 
-	bodyValue := fmt.Sprintf("{\"key\": \"%s\", \"value\": \"test\"}", key)
+	bodyValue := fmt.Sprintf("{\"key\": \"%s\", \"value\": \"test\", \"duration\": 100000}", key)
+	body := strings.NewReader(bodyValue)
+	req, err = http.NewRequest("POST", "/api/v1/store/", body)
+	if err != nil {
+		t.Fatalf("Creating 'GET /api/v1/store/%s' request failed!", key)
+	}
+
+	server.ServeHTTP(respRec, req)
+	if respRec.Code != http.StatusBadRequest {
+		t.Fatalf("Expected to receive status code %d, got %d",
+			http.StatusBadRequest, respRec.Code)
+	}
+}
+
+func TestAddValueReturnsBadRequestOnInvalidDuration(t *testing.T) {
+	setupTest()
+	key := "abasbdsbc"
+
+	bodyValue := fmt.Sprintf("{\"key\": \"%s\", \"value\": \"test\", \"duration\": 0}", key)
 	body := strings.NewReader(bodyValue)
 	req, err = http.NewRequest("POST", "/api/v1/store/", body)
 	if err != nil {
@@ -91,7 +109,7 @@ func TestAddValueReturnsUnprocessableRequest(t *testing.T) {
 		"sjdkajsdkjaskdjaksjdkasjdkasjkdajskdjaksdjkasjdkasjkdjSjsdjaskjdkasjdka" +
 		"sjdkajsdkjaskdjaksjdkasjdkasjkdajskdjaksdjkasjdkasjkdjSjsdjaskjdkasjdka"
 
-	bodyValue := fmt.Sprintf("{\"key\": \"%s\" \"value\": {\"Name\": \"Valerio\", \"Lastname\": \"Gheri\"}}", key)
+	bodyValue := fmt.Sprintf("{\"key\": \"%s\" \"value\": {\"Name\": \"Valerio\", \"Lastname\": \"Gheri\"}, \"duration\": 100000}", key)
 	body := strings.NewReader(bodyValue)
 	req, err = http.NewRequest("POST", "/api/v1/store/", body)
 	if err != nil {
@@ -108,7 +126,7 @@ func TestAddValueReturnsUnprocessableRequest(t *testing.T) {
 func TestAddValueReturnsCreated(t *testing.T) {
 	setupTest()
 	key := "testKey"
-	bodyValue := fmt.Sprintf("{\"key\": \"%s\", \"value\": \"testValue\"}", key)
+	bodyValue := fmt.Sprintf("{\"key\": \"%s\", \"value\": \"testValue\", \"duration\": 100000}", key)
 	body := strings.NewReader(bodyValue)
 	req, err = http.NewRequest("POST", "/api/v1/store/", body)
 	if err != nil {
@@ -125,7 +143,7 @@ func TestAddValueReturnsCreated(t *testing.T) {
 func TestGetValueReturnsValue(t *testing.T) {
 	setupTest()
 	key := "testKey"
-	bodyValue := fmt.Sprintf("{\"key\": \"%s\", \"value\": \"testValue\"}", key)
+	bodyValue := fmt.Sprintf("{\"key\": \"%s\", \"value\": \"testValue\", \"duration\": 100000}", key)
 	body := strings.NewReader(bodyValue)
 	req, err = http.NewRequest("POST", "/api/v1/store/", body)
 	if err != nil {

@@ -51,6 +51,6 @@ func markNode(node *Node) {
 
 func sweep(t *Tree) {
 	for _, node := range nodesToRemove {
-		removeNode(node, t)
+		t.removeNode(node)
 	}
 }
