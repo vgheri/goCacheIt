@@ -32,5 +32,5 @@ func (n *Node) isRoot() bool {
 }
 
 func (n *Node) isExpired() bool {
-	return n.expirationDate.After(time.Now())
+	return n.expirationDate.Before(time.Now())
 }

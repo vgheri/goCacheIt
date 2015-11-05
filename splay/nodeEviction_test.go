@@ -1,7 +1,6 @@
 package splay
 
 import (
-	// "fmt"
 	"testing"
 	"time"
 )
@@ -25,6 +24,7 @@ func createFixedTree() *Tree {
 
 func TestMarkCorrectlyMarksNodeForDeletion(t *testing.T) {
 	tree := createFixedTree()
+	shouldDeleteLeaves = true
 	mark(tree)
 	for _, n := range nodesToRemove {
 		if n.key != "Delta" && n.key != "Geneve" && n.key != "moriarty" &&
@@ -35,9 +35,11 @@ func TestMarkCorrectlyMarksNodeForDeletion(t *testing.T) {
 	}
 }
 
-func TestFreeMemoryRemovesMarkedNodesForDeletion(t *testing.T) {
+func TestSweepRemovesMarkedNodesForDeletion(t *testing.T) {
 	tree := createFixedTree()
-	tree.freeMemory()
+	shouldDeleteLeaves = true
+	mark(tree)
+	sweep(tree)
 	tree.shouldContain("middle", t)
 	tree.shouldContain("Amount", t)
 	tree.shouldContain("First", t)
@@ -52,9 +54,11 @@ func TestFreeMemoryRemovesMarkedNodesForDeletion(t *testing.T) {
 	tree.shouldNotContain("sansa", t)
 }
 
-func TestRuningFreeMemoryMultipleTimes(t *testing.T) {
+func TestRunningMarkAndSweepMultipleTimes(t *testing.T) {
 	tree := createFixedTree()
-	tree.freeMemory()
+	shouldDeleteLeaves = true
+	mark(tree)
+	sweep(tree)
 	tree.shouldContain("middle", t)
 	tree.shouldContain("Amount", t)
 	tree.shouldContain("First", t)
@@ -67,7 +71,9 @@ func TestRuningFreeMemoryMultipleTimes(t *testing.T) {
 	tree.shouldNotContain("moriarty", t)
 	tree.shouldNotContain("opportunity", t)
 	tree.shouldNotContain("sansa", t)
-	tree.freeMemory()
+	shouldDeleteLeaves = true
+	mark(tree)
+	sweep(tree)
 	tree.shouldContain("First", t)
 	tree.shouldContain("netstat", t)
 	tree.shouldContain("nelly", t)
@@ -96,6 +102,7 @@ func TestExpiredKeyShouldBeRemovedFromTree(t *testing.T) {
 	tree := createFixedTree()
 	tree.Insert("somewhere", "{'test': 'value_Abc'}", 500*time.Millisecond)
 	time.Sleep(1 * time.Second)
+	tree.purgeNodes()
 	if n, _ := tree.Get("somewhere"); n != nil {
 		t.Fatal("Expired node should have been removed from the tree")
 	}
@@ -105,6 +112,7 @@ func TestNotExpiredKeyShouldNotBeRemovedFromTree(t *testing.T) {
 	tree := createFixedTree()
 	tree.Insert("somewhere", "{'test': 'value_Abc'}", 5*time.Second)
 	time.Sleep(1 * time.Second)
+	tree.purgeNodes()
 	if n, _ := tree.Get("somewhere"); n == nil {
 		t.Fatal("Not expired node should not have been removed from the tree")
 	}

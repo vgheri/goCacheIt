@@ -67,9 +67,7 @@ func (t *Tree) workerLoop() {
 				return
 			}
 		case <-cacheEvictionTicker.C:
-			if shouldFreeMemory() {
-				t.freeMemory()
-			}
+			t.purgeNodes()
 		}
 	}
 }
@@ -240,7 +238,7 @@ func printNode(n *Node, depth int) {
 			side = "(L)"
 		}
 	}
-	fmt.Printf("%s%s[%s]\n", strings.Repeat("-", 2*depth), side, n.key)
+	fmt.Printf("%s%s[%s][Expiration %s]\n", strings.Repeat("-", 2*depth), side, n.key, n.expirationDate.Format("Mon Jan _2 15:04:05 2006"))
 	printNode(n.left, depth+1)
 	printNode(n.right, depth+1)
 }

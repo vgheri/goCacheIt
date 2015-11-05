@@ -5,6 +5,7 @@ import (
 )
 
 var nodesToRemove []*Node
+var shouldDeleteLeaves bool
 
 func shouldFreeMemory() bool {
 	shouldFreeMemory := false
@@ -18,7 +19,8 @@ func shouldFreeMemory() bool {
 	return shouldFreeMemory
 }
 
-func (t *Tree) freeMemory() {
+func (t *Tree) purgeNodes() {
+	shouldDeleteLeaves = shouldFreeMemory()
 	// TODO improve initial capacity to a possibly meaningful number
 	nodesToRemove = make([]*Node, 0)
 	// mark nodes for deletion
@@ -37,7 +39,8 @@ func markNode(node *Node) {
 	if node == nil {
 		panic("In markNode: node should not be nil")
 	}
-	if node.left == nil && node.right == nil {
+	if node.isExpired() ||
+		(node.isLeaf() && shouldDeleteLeaves) {
 		nodesToRemove = append(nodesToRemove, node)
 		return
 	}
