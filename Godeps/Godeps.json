@@ -12,6 +12,29 @@
 		{
 			"ImportPath": "github.com/gorilla/mux",
 			"Rev": "ee1815431e497d3850809578c93ab6705f1a19f7"
+		},
+		{
+			"ImportPath": "github.com/influxdb/influxdb/client",
+			"Comment": "v0.9.5-rc1-28-g43a4201",
+			"Rev": "43a4201a33054488b89c3eff01945a237405103d"
+		},
+		{
+			"ImportPath": "github.com/influxdb/influxdb/models",
+			"Comment": "v0.9.5-rc1-28-g43a4201",
+			"Rev": "43a4201a33054488b89c3eff01945a237405103d"
+		},
+		{
+			"ImportPath": "github.com/influxdb/influxdb/pkg/escape",
+			"Comment": "v0.9.5-rc1-28-g43a4201",
+			"Rev": "43a4201a33054488b89c3eff01945a237405103d"
+		},
+		{
+			"ImportPath": "github.com/rcrowley/go-metrics",
+			"Rev": "1ce93efbc8f9c568886b2ef85ce305b2217b3de3"
+		},
+		{
+			"ImportPath": "github.com/vrischmann/go-metrics-influxdb",
+			"Rev": "e0f3dc792523e987f62877693d3e730c6dd4da3e"
 		}
 	]
 }

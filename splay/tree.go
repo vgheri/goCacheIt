@@ -3,6 +3,7 @@ package splay
 import (
 	"errors"
 	"fmt"
+	"github.com/vgheri/goCacheIt/metrics"
 	"strings"
 	"time"
 )
@@ -67,7 +68,8 @@ func (t *Tree) workerLoop() {
 				return
 			}
 		case <-cacheEvictionTicker.C:
-			t.purgeNodes()
+			removedNodes := t.purgeNodes()
+			metrics.LogNodesRemoval(removedNodes)
 		}
 	}
 }

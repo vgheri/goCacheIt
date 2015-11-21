@@ -7,6 +7,23 @@ import (
 
 var defaultDuration = 1 * time.Hour
 
+func createFixedTree() *Tree {
+	fakeTree := New(500)
+	insertNodeWithDefaultDuration(fakeTree, "middle", "{'test': 'value_Abc'}")
+	insertNodeWithDefaultDuration(fakeTree, "Amount", "{'test': 'value1'}")
+	insertNodeWithDefaultDuration(fakeTree, "First", "{'test': 'value2'}")
+	insertNodeWithDefaultDuration(fakeTree, "Delta", "{'test': 'value3'}")
+	insertNodeWithDefaultDuration(fakeTree, "Geneve", "{'test': 'value4'}")
+	insertNodeWithDefaultDuration(fakeTree, "netstat", "{'test': 'value5'}")
+	insertNodeWithDefaultDuration(fakeTree, "nelly", "{'test': 'value6'}")
+	insertNodeWithDefaultDuration(fakeTree, "nefertity", "{'test': 'value7'}")
+	insertNodeWithDefaultDuration(fakeTree, "moriarty", "{'test': 'value5'}")
+	insertNodeWithDefaultDuration(fakeTree, "polly", "{'test': 'value6'}")
+	insertNodeWithDefaultDuration(fakeTree, "opportunity", "{'test': 'value7'}")
+	insertNodeWithDefaultDuration(fakeTree, "sansa", "{'test': 'value7'}")
+	return fakeTree
+}
+
 func insertNodeWithDefaultDuration(tree *Tree, key string, value Any) (*Node, error) {
 	return tree.Insert(key, value, defaultDuration)
 }

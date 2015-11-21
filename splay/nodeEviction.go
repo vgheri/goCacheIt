@@ -19,7 +19,10 @@ func shouldFreeMemory() bool {
 	return shouldFreeMemory
 }
 
-func (t *Tree) purgeNodes() {
+func (t *Tree) purgeNodes() int {
+	if t.root == nil {
+		return 0
+	}
 	shouldDeleteLeaves = shouldFreeMemory()
 	// TODO improve initial capacity to a possibly meaningful number
 	nodesToRemove = make([]*Node, 0)
@@ -27,6 +30,7 @@ func (t *Tree) purgeNodes() {
 	mark(t)
 	// remove marked nodes from the tree
 	sweep(t)
+	return len(nodesToRemove)
 }
 
 func mark(t *Tree) {

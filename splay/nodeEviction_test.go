@@ -5,23 +5,6 @@ import (
 	"time"
 )
 
-func createFixedTree() *Tree {
-	fakeTree := New(500)
-	insertNodeWithDefaultDuration(fakeTree, "middle", "{'test': 'value_Abc'}")
-	insertNodeWithDefaultDuration(fakeTree, "Amount", "{'test': 'value1'}")
-	insertNodeWithDefaultDuration(fakeTree, "First", "{'test': 'value2'}")
-	insertNodeWithDefaultDuration(fakeTree, "Delta", "{'test': 'value3'}")
-	insertNodeWithDefaultDuration(fakeTree, "Geneve", "{'test': 'value4'}")
-	insertNodeWithDefaultDuration(fakeTree, "netstat", "{'test': 'value5'}")
-	insertNodeWithDefaultDuration(fakeTree, "nelly", "{'test': 'value6'}")
-	insertNodeWithDefaultDuration(fakeTree, "nefertity", "{'test': 'value7'}")
-	insertNodeWithDefaultDuration(fakeTree, "moriarty", "{'test': 'value5'}")
-	insertNodeWithDefaultDuration(fakeTree, "polly", "{'test': 'value6'}")
-	insertNodeWithDefaultDuration(fakeTree, "opportunity", "{'test': 'value7'}")
-	insertNodeWithDefaultDuration(fakeTree, "sansa", "{'test': 'value7'}")
-	return fakeTree
-}
-
 func TestMarkCorrectlyMarksNodeForDeletion(t *testing.T) {
 	tree := createFixedTree()
 	shouldDeleteLeaves = true
@@ -83,21 +66,6 @@ func TestRunningMarkAndSweepMultipleTimes(t *testing.T) {
 	tree.shouldNotContain("Amount", t)
 }
 
-// func TestMemoryUsage(t *testing.T) {
-// 	tree := createFixedTree()
-// 	for {
-// 		var key string
-// 		for {
-// 			key = randSeq(5)
-// 			if node, _ := tree.Get(key); node == nil {
-// 				break
-// 			}
-// 		}
-// 		_, _ = tree.Insert(key, "{'test': 'asdasdadasasdasdadasasdasdadasasdasdadasasdasdadasasdasdadas'}")
-// 	}
-// 	close(tree.jobs)
-// }
-
 func TestExpiredKeyShouldBeRemovedFromTree(t *testing.T) {
 	tree := createFixedTree()
 	tree.Insert("somewhere", "{'test': 'value_Abc'}", 500*time.Millisecond)
@@ -116,4 +84,19 @@ func TestNotExpiredKeyShouldNotBeRemovedFromTree(t *testing.T) {
 	if n, _ := tree.Get("somewhere"); n == nil {
 		t.Fatal("Not expired node should not have been removed from the tree")
 	}
+}
+
+func TestMemoryUsage(t *testing.T) {
+	tree := createFixedTree()
+	for {
+		var key string
+		for {
+			key = randSeq(5)
+			if node, _ := tree.Get(key); node == nil {
+				break
+			}
+		}
+		_, _ = tree.Insert(key, "{'test': 'asdasdadasasdasdadasasdasdadasasdasdadasasdasdadasasdasdadas'}", 500*time.Second)
+	}
+	close(tree.jobs)
 }

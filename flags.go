@@ -14,6 +14,6 @@ func init() {
 	flag.Uint64Var(&maxMemory, "maxMem", defaultMaxMemory, "Maximum amount of"+
 		" allocated memory in MB. Default value is 512 MB")
 	flag.IntVar(&webServerPort, "port", defaultHTTPPort, "Port to listen to."+
-		" Default value is 3000")
+		" Default value is 3002")
 	flag.Parse()
 }
