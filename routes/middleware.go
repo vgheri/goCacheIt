@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func logMiddleware(requestHandler http.Handler, routeName string) http.Handler {
+func middleware(requestHandler http.Handler, routeName string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		requestHandler.ServeHTTP(w, r)

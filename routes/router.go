@@ -13,7 +13,7 @@ func NewRouter(handler *handlers.Handler) *mux.Router {
 	for _, route := range routes {
 		var routeHandler http.Handler
 		routeHandler = route.HandlerFunc
-		routeHandler = logMiddleware(routeHandler, route.Name)
+		routeHandler = middleware(routeHandler, route.Name)
 		router.
 			Methods(route.Method).
 			Path(route.Pattern).
