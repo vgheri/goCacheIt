@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"github.com/vgheri/goCacheIt/Godeps/_workspace/src/github.com/gorilla/mux"
-	// "github.com/vgheri/goCacheIt/metrics"
 	"github.com/vgheri/goCacheIt/splay"
 	"net/http"
 	"strconv"
@@ -98,7 +97,6 @@ func addValue(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 	return
-
 }
 
 func writeJSONError(w http.ResponseWriter, errorMsg string, httpErrorCode int) {
