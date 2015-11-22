@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/vgheri/goCacheIt/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/vgheri/goCacheIt/handlers"
 	"github.com/vgheri/goCacheIt/routes"
 	"github.com/vgheri/goCacheIt/splay"
@@ -18,9 +17,8 @@ func main() {
 	log.Println("Initializing data store...")
 	dataStore := splay.New(maxMemory)
 	log.Println("Initializing web server...")
-	server := mux.NewRouter()
 	handler := handlers.New(dataStore)
-	routes.SetupRoutes(server, handler)
+	server := routes.NewRouter(handler)
 	http.Handle("/", server)
 	port := fmt.Sprintf(":%d", webServerPort)
 	log.Printf("Server listening on port %d...", webServerPort)

@@ -18,9 +18,8 @@ var respRec *httptest.ResponseRecorder
 
 func setupTest() {
 	dataStore := splay.New(50)
-	server = mux.NewRouter()
 	handler := handlers.New(dataStore)
-	SetupRoutes(server, handler)
+	server = NewRouter(handler)
 	respRec = httptest.NewRecorder()
 }
 

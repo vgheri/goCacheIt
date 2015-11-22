@@ -1,14 +1,34 @@
 package routes
 
 import (
-	"github.com/vgheri/goCacheIt/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/vgheri/goCacheIt/handlers"
+	"net/http"
 )
 
-// SetupRoutes setup routes for handling web commands
-func SetupRoutes(router *mux.Router, handler *handlers.Handler) {
-	router.HandleFunc("/api/v1/store/", handler.HandleAddValue).
-		Methods("POST")
-	router.HandleFunc("/api/v1/store/{key}", handler.HandleGetValue).
-		Methods("GET")
+// Route maps key information for an HTTP route
+type Route struct {
+	Name        string
+	Method      string
+	Pattern     string
+	HandlerFunc http.HandlerFunc
+}
+
+// Routes is a collection of routes
+type Routes []Route
+
+func setupRoutes(handler *handlers.Handler) Routes {
+	return Routes{
+		Route{
+			Name:        "GetValue",
+			Method:      "GET",
+			Pattern:     "/api/v1/store/{key}",
+			HandlerFunc: handler.HandleGetValue,
+		},
+		Route{
+			Name:        "AddValue",
+			Method:      "POST",
+			Pattern:     "/api/v1/store/",
+			HandlerFunc: handler.HandleAddValue,
+		},
+	}
 }
