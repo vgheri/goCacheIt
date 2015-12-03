@@ -24,38 +24,64 @@ func init() {
 	}
 }
 
-func LogHit(routeName string) {
-	// Create a new point batch
-	bp, _ := client.NewBatchPoints(client.BatchPointsConfig{
-		Database: db,
-	})
-
-	// Create a point and add to batch
+// CreateRouteHitMetric creates a data point to register a route hit
+func createRouteHitMetric(routeName string) (*client.Point, error) {
 	tags := map[string]string{"route": routeName}
 	fields := map[string]interface{}{
 		"value": 1,
 	}
-	pt, _ := client.NewPoint("hits", tags, fields, time.Now())
-	bp.AddPoint(pt)
+	return client.NewPoint("hits", tags, fields, time.Now())
+}
+
+// CreateDurationMetric creates a data point to register execution time
+func createDurationMetric(routeName string, duration time.Duration) (*client.Point, error) {
+	elapsedTimeMs := duration.Seconds() * 1000
+
+	tags := map[string]string{"route": routeName}
+	fields := map[string]interface{}{
+		"duration": elapsedTimeMs,
+	}
+	return client.NewPoint("duration_ms", tags, fields, time.Now())
+}
+
+// CreateKeyQueryMetric creates a data point to register a key has been queried
+func createKeyQueryMetric(keyName string) (*client.Point, error) {
+	// Create a point
+	tags := map[string]string{"keyName": keyName}
+	fields := map[string]interface{}{
+		"value": 1,
+	}
+	return client.NewPoint("key_query", tags, fields, time.Now())
+}
+
+// LogMetrics sends to influxdb all data points passed as parameters
+func writeMetrics(points []*client.Point) {
+	bp, _ := client.NewBatchPoints(client.BatchPointsConfig{
+		Database: db,
+	})
+
+	for _, point := range points {
+		bp.AddPoint(point)
+	}
 
 	// Write the batch
 	influx.Write(bp)
 }
 
-func LogDuration(routeName string, duration time.Duration) {
-	elapsedTimeMs := duration.Seconds() * 1000
-	bp, _ := client.NewBatchPoints(client.BatchPointsConfig{
-		Database: db,
-	})
-
-	// Create a point and add to batch
-	tags := map[string]string{"route": routeName}
-	fields := map[string]interface{}{
-		"duration": elapsedTimeMs,
+// LogMetrics log metrics to the default data store
+func LogMetrics(routeName, key string, duration time.Duration) {
+	points := []*client.Point{}
+	if hitPoint, err := createRouteHitMetric(routeName); err == nil {
+		points = append(points, hitPoint)
 	}
-	pt, _ := client.NewPoint("duration_ms", tags, fields, time.Now())
-	bp.AddPoint(pt)
+	if durationPoint, err := createDurationMetric(routeName, duration); err == nil {
+		points = append(points, durationPoint)
+	}
+	if len(key) > 0 {
+		if keyQueryPoint, err := createKeyQueryMetric(key); err == nil {
+			points = append(points, keyQueryPoint)
+		}
+	}
 
-	// Write the batch
-	influx.Write(bp)
+	writeMetrics(points)
 }
