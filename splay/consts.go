@@ -11,5 +11,5 @@ const commandGetNode string = "get"
 const commandRemoveNode string = "remove"
 const memoryCheckFrequency = 1 * time.Second
 
-// when at 90% of maxMemory, trigger cache eviction
+// Trigger cache eviction when at % of limit
 const memoryUsageThreshold byte = 80
