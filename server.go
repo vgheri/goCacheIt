@@ -12,15 +12,14 @@ import (
 const mimeTypeJSON string = "application/json; charset=UTF-8"
 
 func main() {
-	log.Println("Starting server...")
-	log.Printf("Max memory to be used: %d MB", maxMemory)
-	log.Println("Initializing data store...")
+	fmt.Println("Starting server.")
+	fmt.Printf("Max memory to be used: %d MB", maxMemory)
 	dataStore := splay.New(maxMemory)
-	log.Println("Initializing web server...")
+	fmt.Println("Initializing web server...")
 	handler := handlers.New(dataStore)
 	server := routes.NewRouter(handler)
 	http.Handle("/", server)
 	port := fmt.Sprintf(":%d", webServerPort)
-	log.Printf("Server listening on port %d...", webServerPort)
+	log.Printf("Server started and listening on port %d.", webServerPort)
 	log.Fatal(http.ListenAndServe(port, nil))
 }

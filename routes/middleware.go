@@ -2,7 +2,6 @@ package routes
 
 import (
 	"github.com/vgheri/goCacheIt/Godeps/_workspace/src/github.com/gorilla/mux"
-	"github.com/vgheri/goCacheIt/metrics"
 	"log"
 	"net/http"
 	"time"
@@ -13,15 +12,15 @@ func middleware(requestHandler http.Handler, routeName string) http.Handler {
 		start := time.Now()
 		requestHandler.ServeHTTP(w, r)
 		duration := time.Since(start)
+		vars := mux.Vars(r)
+		key := vars["key"]
 		log.Printf(
-			"%s\t%s\t%s\t%s",
+			"%s\t%s\t%s\t%s\t%s",
 			r.Method,
 			r.RequestURI,
+			key,
 			routeName,
 			duration,
 		)
-		vars := mux.Vars(r)
-		key := vars["key"]
-		go metrics.LogMetrics(routeName, key, duration)
 	})
 }
