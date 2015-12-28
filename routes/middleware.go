@@ -9,17 +9,19 @@ import (
 
 func middleware(requestHandler http.Handler, routeName string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		res := newResponseWriterWrapper(w)
 		start := time.Now()
-		requestHandler.ServeHTTP(w, r)
+		requestHandler.ServeHTTP(res, r)
 		duration := time.Since(start)
 		vars := mux.Vars(r)
 		key := vars["key"]
 		log.Printf(
-			"%s\t%s\t%s\t%s\t%s",
+			"%s\t%s\t%s\t%s\t%d\t%s",
 			r.Method,
 			r.RequestURI,
 			key,
 			routeName,
+			res.Status(),
 			duration,
 		)
 	})
