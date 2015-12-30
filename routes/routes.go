@@ -30,5 +30,11 @@ func setupRoutes(handler *handlers.Handler) Routes {
 			Pattern:     "/api/v1/store/",
 			HandlerFunc: handler.HandleAddValue,
 		},
+		Route{
+			Name:        "RemoveValue",
+			Method:      "DELETE",
+			Pattern:     "/api/v1/store/{key}",
+			HandlerFunc: handler.HandleRemoveValue,
+		},
 	}
 }

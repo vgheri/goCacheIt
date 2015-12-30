@@ -11,8 +11,9 @@ import (
 
 // Handler is a strictly typed object containing the list of available handlers
 type Handler struct {
-	HandleGetValue func(w http.ResponseWriter, r *http.Request)
-	HandleAddValue func(w http.ResponseWriter, r *http.Request)
+	HandleGetValue    func(w http.ResponseWriter, r *http.Request)
+	HandleAddValue    func(w http.ResponseWriter, r *http.Request)
+	HandleRemoveValue func(w http.ResponseWriter, r *http.Request)
 }
 
 const mimeTypeJSON string = "application/json; charset=UTF-8"
@@ -23,8 +24,9 @@ var dataStore *splay.Tree
 func New(store *splay.Tree) *Handler {
 	dataStore = store
 	handler := &Handler{
-		HandleGetValue: getValue,
-		HandleAddValue: addValue,
+		HandleGetValue:    getValue,
+		HandleAddValue:    addValue,
+		HandleRemoveValue: removeValue,
 	}
 	return handler
 }
@@ -96,6 +98,25 @@ func addValue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
+	return
+}
+
+// removeValue removes a couple {key,value} from the datastore
+func removeValue(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	key := vars["key"]
+	_, err := dataStore.Remove(key)
+	if err != nil {
+		if err.Error() == "Invalid key." {
+			writeJSONError(w, err.Error(),
+				http.StatusBadRequest)
+		} else {
+			writeJSONError(w, err.Error(),
+				http.StatusNotFound)
+		}
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 	return
 }
 

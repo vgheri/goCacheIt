@@ -1,6 +1,7 @@
 package routes
 
 import (
+	// "encoding/json"
 	"fmt"
 	"github.com/vgheri/goCacheIt/Godeps/_workspace/src/github.com/gorilla/mux"
 	"github.com/vgheri/goCacheIt/handlers"
@@ -165,5 +166,47 @@ func TestGetValueReturnsValue(t *testing.T) {
 	if getRespRec.Code != http.StatusOK {
 		t.Fatalf("Expected to receive status code %d, got %d",
 			http.StatusOK, getRespRec.Code)
+	}
+}
+
+func TestRemoveValueShouldReturnNotFoundWhenKeyDoesntExist(t *testing.T) {
+	setupTest()
+	key := "TestRemoveValueShouldReturnNotFoundWhenKeyDoesntExist"
+	req, err = http.NewRequest("DELETE", "/api/v1/store/"+key, nil)
+	if err != nil {
+		t.Fatalf("Creating 'DELETE /api/v1/store/%s' request failed!", key)
+	}
+	server.ServeHTTP(respRec, req)
+	if respRec.Code != http.StatusNotFound {
+		t.Fatalf("Expected to receive status code %d, got %d instead.",
+			http.StatusNotFound, respRec.Code)
+	}
+}
+
+func TestRemoveValueShouldReturnNoContentWhenAValueIsSuccessfullyRemoved(t *testing.T) {
+	setupTest()
+	key := "TestRemoveValueShouldReturnNoContentWhenAValueIsSuccessfullyRemoved"
+	bodyValue := fmt.Sprintf("{\"key\": \"%s\", \"value\": \"testValue\", \"duration\": 100000}", key)
+	body := strings.NewReader(bodyValue)
+	req, err = http.NewRequest("POST", "/api/v1/store/", body)
+	if err != nil {
+		t.Fatal("Creating 'POST /api/v1/store/' request failed!", key)
+	}
+
+	server.ServeHTTP(respRec, req)
+	if respRec.Code != http.StatusCreated {
+		t.Fatalf("Expected to receive status code %d, got %d",
+			http.StatusCreated, respRec.Code)
+	}
+
+	delRespRec := httptest.NewRecorder()
+	req, err = http.NewRequest("DELETE", "/api/v1/store/"+key, nil)
+	if err != nil {
+		t.Fatalf("Creating 'DELETE /api/v1/store/%s' request failed!", key)
+	}
+	server.ServeHTTP(delRespRec, req)
+	if delRespRec.Code != http.StatusNoContent {
+		t.Fatalf("Expected to receive status code %d, got %d instead.",
+			http.StatusNoContent, delRespRec.Code)
 	}
 }
