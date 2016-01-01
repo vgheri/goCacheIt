@@ -16,7 +16,7 @@ func middleware(requestHandler http.Handler, routeName string) http.Handler {
 		vars := mux.Vars(r)
 		key := vars["key"]
 		log.Printf(
-			"%s\t%s\t%s\t%s\t%d\t%s",
+			"\t%s\t%s\t%s\t%s\t%d\t%s",
 			r.Method,
 			r.RequestURI,
 			key,
